@@ -49,7 +49,7 @@ export class Game {
       unlockedNodes: save.unlockedNodes,
       equippedOverlay: save.equippedOverlay,
     };
-    this.input = new Input(renderer.canvas);
+    this.input = new Input(renderer.canvas.parentElement ?? renderer.canvas);
     this.onDone = onDone;
     this.dashLeft = this.bonuses.startDashMs / 1000;
   }

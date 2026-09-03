@@ -21,8 +21,30 @@ const app: HTMLDivElement = appEl;
 let save: SaveData = loadSave();
 let currentGame: Game | null = null;
 
+function setPlayLock(active: boolean): void {
+  document.documentElement.classList.toggle('play-active', active);
+  if (active) {
+    const orient = screen.orientation as ScreenOrientation & {
+      lock?: (o: string) => Promise<void>;
+    };
+    void orient.lock?.('landscape').catch(() => {
+      /* browsers often require fullscreen; layout still adapts */
+    });
+  } else {
+    const orient = screen.orientation as ScreenOrientation & {
+      unlock?: () => void;
+    };
+    try {
+      orient.unlock?.();
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 function go(screen: Screen): void {
   disposeMenuKeys();
+  setPlayLock(false);
   if (currentGame) {
     currentGame.stop();
     currentGame = null;
@@ -73,6 +95,7 @@ function go(screen: Screen): void {
   }
 
   // play
+  setPlayLock(true);
   const wrap = document.createElement('div');
   wrap.className = 'screen game-wrap';
   const header = document.createElement('div');
@@ -96,9 +119,11 @@ function go(screen: Screen): void {
   const { canvas, renderer } = createGameCanvas(canvasHost);
   const onResize = () => renderer.resize();
   window.addEventListener('resize', onResize);
+  window.addEventListener('orientationchange', onResize);
 
   currentGame = new Game(renderer, save, (result) => {
     window.removeEventListener('resize', onResize);
+    window.removeEventListener('orientationchange', onResize);
     save = result.save;
     if (result.newAchievements.length) {
       const names = result.newAchievements
