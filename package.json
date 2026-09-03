@@ -1,0 +1,22 @@
+{
+  "name": "dina-run",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && node scripts/fix-html.mjs",
+    "build:share": "tsc && vite build --mode share && node scripts/pack-share.mjs",
+    "deploy": "npm run build && npx --yes vercel deploy dist --temporary --yes",
+    "deploy:login": "npx --yes vercel login",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2",
+    "vite": "^8.2.2",
+    "vite-plugin-singlefile": "^2.3.3"
+  },
+  "dependencies": {
+    "@fontsource/fusion-pixel-12px-proportional-sc": "^5.3.0"
+  }
+}
