@@ -10,7 +10,6 @@ import {
   DINO_RUN_B,
   DINO_W,
   SPRITE_SCALE,
-  gridBounds,
   lastSolidRow,
 } from '../art/sprites';
 import { GROUND_Y } from './World';
@@ -100,8 +99,8 @@ export class Player {
   }
 
   /**
-   * Hitbox from the same solid bounds as the shield outline.
-   * Duck covers the full flat body including snout (no left-shifted stub).
+   * Duck hitbox matches local Google Dino: CollisionBox(1, 18, 55, 25).
+   * Shield still follows solid pixel bounds of the official silhouette.
    */
   get hitbox(): { x: number; y: number; w: number; h: number } {
     const shrink = this.bonuses.hitboxShrink;
@@ -109,12 +108,12 @@ export class Player {
       this.ducking || this.phase === 'duck' || this.phase === 'duckWindup';
     const gridH = ducking ? DINO_H : lastSolidRow(this.poseGrid) + 1;
     if (ducking) {
-      const b = gridBounds(this.poseGrid);
+      const box = { x: 1, y: 18, w: 55, h: 25 };
       return {
-        x: this.x + b.x * SCALE + shrink,
-        y: this.y - gridH * SCALE + b.y * SCALE + shrink,
-        w: Math.max(SCALE, b.w * SCALE - shrink * 2),
-        h: Math.max(SCALE, b.h * SCALE - shrink * 2),
+        x: this.x + box.x * SCALE + shrink,
+        y: this.y - gridH * SCALE + box.y * SCALE + shrink,
+        w: Math.max(SCALE, box.w * SCALE - shrink * 2),
+        h: Math.max(SCALE, box.h * SCALE - shrink * 2),
       };
     }
     const box = { x: 12, y: 6, w: 20, h: 28 };
