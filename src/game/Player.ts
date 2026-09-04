@@ -16,7 +16,8 @@ import type { Input } from './Input';
 
 const BASE_JUMP_WINDUP = 0.08;
 const BASE_DUCK_WINDUP = 0.06;
-const BASE_JUMP_FORCE = -580;
+/** Tuned for SPRITE_SCALE=2 so peak clears tall cactus with margin */
+const BASE_JUMP_FORCE = -720;
 const GRAVITY = 1678;
 /** Faster fall after apex if jump is released — hang time only, same peak height */
 const FALL_RELEASE_MUL = 2.2;
@@ -118,11 +119,28 @@ export class Player {
 
     if (this.phase === 'landRecovery') {
       this.landTimer -= dt;
+      if (input.duckPressed || input.duckHeld) {
+        this.landTimer = 0;
+        this.beginDuck(true);
+        return;
+      }
+      if (input.jumpPressed) {
+        this.landTimer = 0;
+        this.phase = 'run';
+        this.beginJump();
+        return;
+      }
       if (this.landTimer <= 0) this.phase = 'run';
       return;
     }
 
     if (this.phase === 'jumpWindup') {
+      // Swipe/zone duck can cancel a pending jump.
+      if (input.duckPressed || input.duckHeld) {
+        this.windupTimer = 0;
+        this.beginDuck(true);
+        return;
+      }
       this.windupTimer -= dt;
       if (this.windupTimer <= 0) this.launchJump();
       return;
@@ -209,9 +227,18 @@ export class Player {
     }
   }
 
-  private beginDuck(): void {
-    if (this.phase !== 'run') return;
+  private beginDuck(fromCancel = false): void {
+    if (this.phase === 'air') return;
+    if (
+      !fromCancel &&
+      this.phase !== 'run' &&
+      this.phase !== 'landRecovery'
+    ) {
+      return;
+    }
     const windup = BASE_DUCK_WINDUP * this.bonuses.duckWindupMul;
+    this.jumpsUsed = 0;
+    this.vy = 0;
     if (windup < 0.02) {
       this.phase = 'duck';
       this.ducking = true;

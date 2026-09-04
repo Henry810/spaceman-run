@@ -112,7 +112,7 @@ function go(screen: Screen): void {
   const hint = document.createElement('p');
   hint.className = 'hint';
   hint.textContent =
-    '空格短按小跳、按住高跳 · ↓ 蹲 · 触屏点按跳跃、向下滑下蹲';
+    '空格短按小跳、按住高跳 · ↓ 蹲 · 触屏上方点按跳跃、下方点按/下滑下蹲';
 
   wrap.append(header, canvasHost, hint);
   app.append(wrap);

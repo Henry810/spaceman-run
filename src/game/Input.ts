@@ -12,12 +12,9 @@ export class Input {
   private pointerId: number | null = null;
   private startY = 0;
   private startX = 0;
-  private startTime = 0;
   private duckedThisGesture = false;
-  /** True until we know this gesture is a swipe-duck or a jump. */
-  private gestureOpen = false;
   private touchJumpActive = false;
-  private jumpArmTimer = 0;
+  private zoneDuck = false;
   private duckReleaseTimer = 0;
 
   constructor(target: HTMLElement) {
@@ -41,7 +38,6 @@ export class Input {
     this.target.removeEventListener('pointercancel', this.onPointerUp);
     this.target.removeEventListener('touchstart', this.blockScroll);
     this.target.removeEventListener('touchmove', this.blockScroll);
-    this.clearJumpArmTimer();
     this.clearDuckReleaseTimer();
   }
 
@@ -54,13 +50,6 @@ export class Input {
     e.preventDefault();
   };
 
-  private clearJumpArmTimer(): void {
-    if (this.jumpArmTimer) {
-      window.clearTimeout(this.jumpArmTimer);
-      this.jumpArmTimer = 0;
-    }
-  }
-
   private clearDuckReleaseTimer(): void {
     if (this.duckReleaseTimer) {
       window.clearTimeout(this.duckReleaseTimer);
@@ -68,28 +57,8 @@ export class Input {
     }
   }
 
-  private fireJump(hold: boolean): void {
-    this.gestureOpen = false;
-    this.clearJumpArmTimer();
-    this.jumpHeld = true;
-    this.touchJumpActive = hold;
-    if (!this.jumpLatch) {
-      this.jumpPressed = true;
-      this.jumpLatch = true;
-    }
-    if (!hold) {
-      window.setTimeout(() => {
-        this.jumpHeld = false;
-        this.jumpLatch = false;
-        this.touchJumpActive = false;
-      }, 0);
-    }
-  }
-
   private startDuck(): void {
-    this.clearJumpArmTimer();
     this.clearDuckReleaseTimer();
-    this.gestureOpen = false;
     this.duckedThisGesture = true;
     this.touchJumpActive = false;
     this.jumpHeld = false;
@@ -98,6 +67,15 @@ export class Input {
     if (!this.duckLatch) {
       this.duckPressed = true;
       this.duckLatch = true;
+    }
+  }
+
+  private fireJump(): void {
+    this.jumpHeld = true;
+    this.touchJumpActive = true;
+    if (!this.jumpLatch) {
+      this.jumpPressed = true;
+      this.jumpLatch = true;
     }
   }
 
@@ -139,34 +117,38 @@ export class Input {
   private onPointerDown = (e: PointerEvent): void => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     e.preventDefault();
-    this.clearJumpArmTimer();
     this.clearDuckReleaseTimer();
     this.pointerId = e.pointerId;
     this.startY = e.clientY;
     this.startX = e.clientX;
-    this.startTime = performance.now();
     this.duckedThisGesture = false;
-    this.gestureOpen = true;
     this.touchJumpActive = false;
-    this.duckHeld = false;
-    this.duckLatch = false;
     this.target.setPointerCapture?.(e.pointerId);
 
-    // Arm jump shortly after press if this isn't a swipe-duck.
-    this.jumpArmTimer = window.setTimeout(() => {
-      this.jumpArmTimer = 0;
-      if (this.gestureOpen && !this.duckedThisGesture) {
-        this.fireJump(true);
-      }
-    }, 45);
+    const rect = this.target.getBoundingClientRect();
+    const relY = rect.height > 0 ? (e.clientY - rect.top) / rect.height : 0.5;
+    // Lower ~40% of the playfield: tap/hold to duck (reliable on phones).
+    if (relY >= 0.58) {
+      this.zoneDuck = true;
+      this.startDuck();
+      return;
+    }
+
+    this.zoneDuck = false;
+    this.duckHeld = false;
+    this.duckLatch = false;
+    // Upper area: jump immediately; swipe-down can still cancel into duck.
+    this.fireJump();
   };
 
   private onPointerMove = (e: PointerEvent): void => {
     if (this.pointerId !== e.pointerId) return;
     e.preventDefault();
+    if (this.zoneDuck || this.duckedThisGesture) return;
     const dy = e.clientY - this.startY;
     const dx = e.clientX - this.startX;
-    if (!this.duckedThisGesture && dy > 12 && dy >= Math.abs(dx) * 0.4) {
+    // Swipe down from jump zone → cancel jump into duck
+    if (dy > 10 && dy >= Math.abs(dx) * 0.35) {
       this.startDuck();
     }
   };
@@ -176,38 +158,31 @@ export class Input {
     e.preventDefault();
     const dy = e.clientY - this.startY;
     const dx = e.clientX - this.startX;
-    const elapsed = performance.now() - this.startTime;
-    const absDx = Math.abs(dx);
-    const absDy = Math.abs(dy);
 
-    if (!this.duckedThisGesture && dy > 12 && dy >= absDx * 0.4) {
+    if (
+      !this.zoneDuck &&
+      !this.duckedThisGesture &&
+      dy > 10 &&
+      dy >= Math.abs(dx) * 0.35
+    ) {
       this.startDuck();
     }
 
-    if (this.duckedThisGesture) {
+    if (this.duckedThisGesture || this.zoneDuck) {
       this.duckHeld = true;
       this.clearDuckReleaseTimer();
       this.duckReleaseTimer = window.setTimeout(() => {
         this.duckHeld = false;
         this.duckLatch = false;
         this.duckReleaseTimer = 0;
-      }, 340);
+      }, 380);
     } else if (this.touchJumpActive) {
       this.jumpHeld = false;
       this.jumpLatch = false;
       this.touchJumpActive = false;
-    } else if (
-      this.gestureOpen &&
-      absDx < 20 &&
-      absDy < 20 &&
-      elapsed < 360
-    ) {
-      // Quick tap released before jump-arm timer — still jump.
-      this.fireJump(false);
     }
 
-    this.clearJumpArmTimer();
-    this.gestureOpen = false;
+    this.zoneDuck = false;
     this.pointerId = null;
     this.duckedThisGesture = false;
     try {
