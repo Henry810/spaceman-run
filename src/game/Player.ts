@@ -93,23 +93,25 @@ export class Player {
     return DINO_W * SCALE;
   }
 
+  /**
+   * Body core in sprite-grid units (44×47 stand/jump, 59×25 duck).
+   * Excludes snout tip, tail tip, and lower legs so a visually clear
+   * cactus jump does not false-collide.
+   */
   get hitbox(): { x: number; y: number; w: number; h: number } {
     const shrink = this.bonuses.hitboxShrink;
-    const h = this.drawHeight;
-    if (this.ducking || this.phase === 'duck' || this.phase === 'duckWindup') {
-      const h = 25 * SCALE;
-      return {
-        x: this.x + 1 * SCALE + shrink,
-        y: this.y - h + shrink,
-        w: 55 * SCALE - shrink * 2,
-        h: h - shrink,
-      };
-    }
+    const ducking =
+      this.ducking || this.phase === 'duck' || this.phase === 'duckWindup';
+    // {x,y,w,h} relative to top-left of the drawn pose grid
+    const box = ducking
+      ? { x: 6, y: 1, w: 46, h: 12 }
+      : { x: 12, y: 6, w: 20, h: 28 };
+    const gridH = ducking ? 25 : lastSolidRow(this.poseGrid) + 1;
     return {
-      x: this.x + 10 * SCALE + shrink,
-      y: this.y - h + 6 * SCALE + shrink,
-      w: DINO_W * SCALE - 18 * SCALE - shrink * 2,
-      h: h - 8 * SCALE - shrink * 2,
+      x: this.x + box.x * SCALE + shrink,
+      y: this.y - gridH * SCALE + box.y * SCALE + shrink,
+      w: Math.max(SCALE, box.w * SCALE - shrink * 2),
+      h: Math.max(SCALE, box.h * SCALE - shrink * 2),
     };
   }
 

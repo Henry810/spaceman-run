@@ -11,12 +11,28 @@ import {
   PTERO_B,
   SPRITE_SCALE,
   drawGrid,
+  gridBounds,
   gridSize,
   lastSolidRow,
   plantY,
   type PixelGrid,
 } from '../art/sprites';
 import { GAME_W, GROUND_Y } from './World';
+
+/** Inset from solid pixel bounds (sprite grid units → × SPRITE_SCALE). */
+type BoxInset = { x: number; top: number; bottom: number };
+
+/**
+ * Cactus: trunk+arms solid bounds, then shrink so a clear jump doesn't false-hit.
+ * Top inset is intentional foot clearance.
+ */
+const CACTUS_INSET: BoxInset = { x: 3, top: 3, bottom: 1 };
+
+/**
+ * Ptero: ignore empty padding via gridBounds, then shrink wings/beak tips.
+ * Body core only — wide wing AABB was unfair.
+ */
+const PTERO_INSET: BoxInset = { x: 8, top: 5, bottom: 4 };
 
 export type ObstacleKind =
   | 'cactusS'
@@ -77,10 +93,21 @@ function makeObstacle(kind: ObstacleKind, x: number): Obstacle {
   return { kind, x, y, grid, w: w * PIXEL, h: solidH * PIXEL };
 }
 
+function solidHitbox(
+  o: Obstacle,
+  inset: BoxInset,
+): { x: number; y: number; w: number; h: number } {
+  const b = gridBounds(o.grid);
+  const x = o.x + (b.x + inset.x) * PIXEL;
+  const y = o.y + (b.y + inset.top) * PIXEL;
+  const w = Math.max(PIXEL, (b.w - inset.x * 2) * PIXEL);
+  const h = Math.max(PIXEL, (b.h - inset.top - inset.bottom) * PIXEL);
+  return { x, y, w, h };
+}
+
 /**
- * Gates/arches: lintel only.
- * Player X is fixed, so pillar boxes always kill as they scroll past —
- * stand/duck must pass the opening; only a jump clips the beam.
+ * Per-kind hitboxes (canvas px). Gates: lintel only — pillars can't work
+ * with fixed player X. Cactus/ptero: solid bounds + explicit insets.
  */
 export function obstacleHitboxes(
   o: Obstacle,
@@ -97,7 +124,11 @@ export function obstacleHitboxes(
       },
     ];
   }
-  return [{ x: o.x + 2, y: o.y + 2, w: o.w - 4, h: o.h - 4 }];
+  if (o.kind === 'ptero') {
+    return [solidHitbox(o, PTERO_INSET)];
+  }
+  // All cactus variants (single / tall / clusters)
+  return [solidHitbox(o, CACTUS_INSET)];
 }
 
 export class ObstacleManager {
