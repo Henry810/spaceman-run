@@ -6,7 +6,7 @@ import { writeSave } from '../meta/save';
 import type { SkinState } from '../art/skinLayers';
 import { Input } from './Input';
 import { Player } from './Player';
-import { ObstacleManager, aabb } from './Obstacles';
+import { ObstacleManager, aabb, obstacleHitboxes } from './Obstacles';
 import { World } from './World';
 import { Renderer } from './Renderer';
 
@@ -109,8 +109,8 @@ export class Game {
     const ph = this.player.hitbox;
     for (let i = 0; i < this.obstacles.list.length; i++) {
       const o = this.obstacles.list[i];
-      const oh = { x: o.x + 2, y: o.y + 2, w: o.w - 4, h: o.h - 4 };
-      if (!aabb(ph, oh)) continue;
+      const boxes = obstacleHitboxes(o);
+      if (!boxes.some((oh) => aabb(ph, oh))) continue;
       const outcome = this.player.tryHit();
       if (outcome === 'shield') {
         this.shieldUsed = true;

@@ -1,39 +1,45 @@
-/** Pixel color keys → RGBA */
+/** Pixel color keys → RGBA — flat / high-contrast (404 silhouette feel) */
 export const PALETTE: Record<string, string> = {
   '.': 'transparent',
-  g: '#5ecf6a',
-  G: '#2f8f44',
-  s: '#a8e89a',
-  b: '#1c3a24',
-  e: '#f7f4e8',
-  p: '#1a1814',
-  y: '#e0b44a',
-  t: '#3d9a52',
-  a: '#5ef0c0',
-  A: '#1a9a72',
-  r: '#e09048',
-  R: '#9a5020',
-  c: '#58b4f0',
-  C: '#206898',
-  m: '#f078c0',
-  M: '#a03870',
-  z: '#3aa34a',
-  Z: '#2a7a36',
-  x: '#1a4a24',
+  g: '#2f9a3a',
+  G: '#143d1c',
+  s: '#2f9a3a',
+  b: '#121410',
+  e: '#f0ead8',
+  p: '#0c0c0a',
+  y: '#d4a010',
+  t: '#2f9a3a',
+  a: '#28c090',
+  A: '#0e6a4a',
+  r: '#c86820',
+  R: '#6a3010',
+  c: '#3a88d0',
+  C: '#184878',
+  m: '#d040a8',
+  M: '#781858',
+  z: '#2a7030',
+  Z: '#143818',
+  x: '#0a1e10',
   w: '#ffffff',
-  d: '#c45a3a',
+  d: '#a84828',
+  /** Museum stone */
+  k: '#8a8678',
+  K: '#4a483e',
+  /** Cave rock */
+  n: '#6a5a48',
+  N: '#2e281e',
 };
 
 export type PaletteRemap = Partial<Record<string, string>>;
 
 export const OVERLAY_REMAPS: Record<string, PaletteRemap> = {
-  gold_base: { g: '#f0d24a', G: '#c49818', s: '#fff0a0', t: '#b88820', y: '#ffe060' },
-  night_base: { g: '#4a6eb8', G: '#243868', s: '#8aacf0', t: '#1a2850', y: '#a0b8e8' },
-  iron_base: { g: '#a8b0bc', G: '#5a646e', s: '#d8dee8', t: '#484e56', y: '#c0c8d0' },
-  ember_base: { g: '#f06038', G: '#a02818', s: '#ff9870', t: '#781810', y: '#ffb060' },
-  helix_base: { g: '#e050c0', G: '#781858', s: '#f8a0e0', t: '#580840', y: '#f0c0e8' },
-  trail_base: { g: '#88b848', G: '#486820', s: '#c8e878', t: '#304818', y: '#d0e060' },
-  scar_base: { g: '#8a9a6a', G: '#4a5a38', s: '#c0c8a0', t: '#3a4830', y: '#b8a878' },
+  gold_base: { g: '#e0b020', G: '#7a5808', s: '#e0b020', t: '#e0b020', y: '#e0b020' },
+  night_base: { g: '#3a5a98', G: '#182848', s: '#3a5a98', t: '#3a5a98', y: '#3a5a98' },
+  iron_base: { g: '#8890a0', G: '#404850', s: '#8890a0', t: '#8890a0', y: '#8890a0' },
+  ember_base: { g: '#e04820', G: '#781808', s: '#e04820', t: '#e04820', y: '#e04820' },
+  helix_base: { g: '#d038a8', G: '#580838', s: '#d038a8', t: '#d038a8', y: '#d038a8' },
+  trail_base: { g: '#709828', G: '#384818', s: '#709828', t: '#709828', y: '#709828' },
+  scar_base: { g: '#6a7a48', G: '#303820', s: '#6a7a48', t: '#6a7a48', y: '#6a7a48' },
 };
 
 export type PixelGrid = string[];
@@ -43,7 +49,8 @@ export const DINO_W = 44;
 export const DINO_H = 47;
 export const DINO_DUCK_W = 59;
 export const DINO_DUCK_H = 25;
-export const SPRITE_SCALE = 1;
+/** ~2× Chrome size — shorter reaction window, room for costume detail */
+export const SPRITE_SCALE = 2;
 
 /** Chrome 44x47 standing/jump silhouette, colorized */
 export const DINO_JUMP: PixelGrid = [
@@ -541,6 +548,90 @@ export function makeCactusCluster(count: 2 | 3 | 4): PixelGrid {
 export const CACTUS_X2 = makeCactusCluster(2);
 export const CACTUS_X3 = makeCactusCluster(3);
 export const CACTUS_X4 = makeCactusCluster(4);
+
+/**
+ * Museum gate — 798 concept-hall door frame (像素化馆门).
+ * Pass through the center; pillars are light collision. 48×36
+ */
+export const MUSEUM_GATE: PixelGrid = [
+  'KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK',
+  'KkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkK',
+  'Kk............................................kK',
+  'Kk............................................kK',
+  'Kk.KK......................................KK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.Kk......................................kK.kK',
+  'Kk.KKKK..................................KKKK.kK',
+  'Kk............................................kK',
+  'Kk............................................kK',
+  'KkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkK',
+  'KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK',
+];
+
+/**
+ * Habitat cave arch — museum diorama arch (造景拱门).
+ * Center is open; rock pillars are light collision. 48×34
+ */
+export const CAVE_ARCH: PixelGrid = [
+  '................NNNNNNNNNNNNNNNN................',
+  '............NNNNnnnnnnnnnnnnnnnnNNNN............',
+  '..........NNnnnn................nnnnNN..........',
+  '........NNnn........................nnNN........',
+  '.......NNn............................nNN.......',
+  '......NNn..............................nNN......',
+  '.....NNn................................nNN.....',
+  '.....Nn..................................nN.....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....Nn....................................nN....',
+  '....NnN..................................NnN....',
+  '....NNNn................................nNNN....',
+  '....NNNNNn..........................nnNNNNNN....',
+  '....NNNNNNNNNNNN............NNNNNNNNNNNNNNNN....',
+];
 
 /** Last row that contains a painted pixel (feet / cactus base). */
 export function lastSolidRow(grid: PixelGrid): number {

@@ -4,6 +4,8 @@ import {
   CACTUS_X2,
   CACTUS_X3,
   CACTUS_X4,
+  CAVE_ARCH,
+  MUSEUM_GATE,
   PTERO_A,
   PTERO_B,
   SPRITE_SCALE,
@@ -21,7 +23,9 @@ export type ObstacleKind =
   | 'cactusX2'
   | 'cactusX3'
   | 'cactusX4'
-  | 'ptero';
+  | 'ptero'
+  | 'museumDoor'
+  | 'caveArch';
 
 export interface Obstacle {
   kind: ObstacleKind;
@@ -46,6 +50,10 @@ function gridFor(kind: ObstacleKind): PixelGrid {
       return CACTUS_X4;
     case 'ptero':
       return PTERO_A;
+    case 'museumDoor':
+      return MUSEUM_GATE;
+    case 'caveArch':
+      return CAVE_ARCH;
     default:
       return CACTUS_S;
   }
@@ -58,23 +66,43 @@ function makeObstacle(kind: ObstacleKind, x: number): Obstacle {
   let y: number;
   if (kind === 'ptero') {
     const band = Math.random();
-    if (band < 0.34) y = GROUND_Y - 52;
-    else if (band < 0.67) y = GROUND_Y - 72;
-    else y = GROUND_Y - 92;
+    // Scaled for SPRITE_SCALE=2 — low band forces duck
+    if (band < 0.34) y = GROUND_Y - 58 * PIXEL;
+    else if (band < 0.67) y = GROUND_Y - 78 * PIXEL;
+    else y = GROUND_Y - 98 * PIXEL;
   } else {
     y = plantY(GROUND_Y, grid, PIXEL);
   }
   return { kind, x, y, grid, w: w * PIXEL, h: solidH * PIXEL };
 }
 
+/** Light obstacles: only side pillars collide (center passage). */
+export function obstacleHitboxes(
+  o: Obstacle,
+): { x: number; y: number; w: number; h: number }[] {
+  if (o.kind === 'museumDoor' || o.kind === 'caveArch') {
+    const pillar = 6 * PIXEL;
+    return [
+      { x: o.x + PIXEL, y: o.y + PIXEL, w: pillar, h: o.h - PIXEL * 2 },
+      {
+        x: o.x + o.w - pillar - PIXEL,
+        y: o.y + PIXEL,
+        w: pillar,
+        h: o.h - PIXEL * 2,
+      },
+    ];
+  }
+  return [{ x: o.x + 2, y: o.y + 2, w: o.w - 4, h: o.h - 4 }];
+}
+
 export class ObstacleManager {
   list: Obstacle[] = [];
-  private spawnTimer = 1.2;
+  private spawnTimer = 1.0;
   private previewQueue: { kind: ObstacleKind; in: number } | null = null;
 
   reset(): void {
     this.list = [];
-    this.spawnTimer = 1.2;
+    this.spawnTimer = 1.0;
     this.previewQueue = null;
   }
 
@@ -98,10 +126,20 @@ export class ObstacleManager {
     if (this.spawnTimer <= 0 && !this.previewQueue) {
       const kind = this.pickKind(distance);
       const widthFactor =
-        kind === 'cactusX4' ? 1.4 : kind === 'cactusX3' ? 1.25 : kind === 'cactusX2' ? 1.12 : 1;
+        kind === 'cactusX4'
+          ? 1.35
+          : kind === 'cactusX3'
+            ? 1.2
+            : kind === 'cactusX2'
+              ? 1.1
+              : kind === 'museumDoor' || kind === 'caveArch'
+                ? 1.15
+                : 1;
+      // Slightly denser than before (paired with larger dino + light gates)
       const gap =
-        (1.05 + Math.random() * 0.85 - Math.min(0.35, distance / 22000)) * widthFactor;
-      this.spawnTimer = Math.max(0.75, gap);
+        (0.88 + Math.random() * 0.72 - Math.min(0.4, distance / 20000)) *
+        widthFactor;
+      this.spawnTimer = Math.max(0.55, gap);
 
       if (showPreview) {
         this.previewQueue = { kind, in: previewLead };
@@ -121,7 +159,10 @@ export class ObstacleManager {
 
   private pickKind(distance: number): ObstacleKind {
     const r = Math.random();
-    if (distance > 1400 && r < 0.22) return 'ptero';
+    if (distance > 900 && r < 0.14) {
+      return Math.random() < 0.5 ? 'museumDoor' : 'caveArch';
+    }
+    if (distance > 1400 && r < 0.28) return 'ptero';
 
     const g = Math.random();
     if (distance > 5000 && g < 0.12) return 'cactusX4';

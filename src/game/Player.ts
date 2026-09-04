@@ -105,10 +105,10 @@ export class Player {
       };
     }
     return {
-      x: this.x + 10 + shrink,
-      y: this.y - h + 6 + shrink,
-      w: DINO_W * SCALE - 18 - shrink * 2,
-      h: h - 8 - shrink * 2,
+      x: this.x + 10 * SCALE + shrink,
+      y: this.y - h + 6 * SCALE + shrink,
+      w: DINO_W * SCALE - 18 * SCALE - shrink * 2,
+      h: h - 8 * SCALE - shrink * 2,
     };
   }
 

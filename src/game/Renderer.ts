@@ -49,26 +49,50 @@ export class Renderer {
       ctx.fillRect(0, 0, GAME_W, GAME_H);
     }
 
-    // clouds
-    ctx.fillStyle = world.night ? 'rgba(180,200,220,0.25)' : 'rgba(255,255,255,0.55)';
+    // Chunkier pixel clouds (404 / offline dino feel)
+    const cloudFill = world.night ? '#6a7a88' : '#f5f5f5';
+    const cloudEdge = world.night ? '#3a4850' : '#d8d8d0';
     for (const c of world.clouds) {
-      ctx.beginPath();
-      ctx.ellipse(c.x, c.y, c.w * 0.5, 10, 0, 0, Math.PI * 2);
-      ctx.ellipse(c.x + c.w * 0.3, c.y - 4, c.w * 0.35, 8, 0, 0, Math.PI * 2);
-      ctx.fill();
+      const bw = Math.max(4, Math.floor(c.w / 6));
+      const bh = 4;
+      const cx = Math.floor(c.x);
+      const cy = Math.floor(c.y);
+      ctx.fillStyle = cloudEdge;
+      ctx.fillRect(cx, cy, bw * 3, bh);
+      ctx.fillRect(cx + bw, cy - bh, bw * 2, bh);
+      ctx.fillStyle = cloudFill;
+      ctx.fillRect(cx + 1, cy + 1, bw * 3 - 2, bh - 1);
+      ctx.fillRect(cx + bw + 1, cy - bh + 1, bw * 2 - 2, bh - 1);
     }
 
-    // ground — Chrome-like 1px line + speckles
-    ctx.fillStyle = world.night ? '#4a6a58' : '#5a4a32';
-    ctx.fillRect(0, GROUND_Y, GAME_W, 2);
+    // Ground: solid bands + pointillism (no ground gradient)
+    const line = world.night ? '#2a3a30' : '#2a2218';
+    const dirt = world.night ? '#1e2e28' : '#6b5230';
+    const dirtHi = world.night ? '#3a4e42' : '#8a6a38';
+    const dirtLo = world.night ? '#14201c' : '#4a3818';
+    ctx.fillStyle = line;
+    ctx.fillRect(0, GROUND_Y, GAME_W, 3);
 
-    ctx.fillStyle = world.night ? '#3d5a48' : '#8b6b3d';
-    ctx.fillRect(0, GROUND_Y + 2, GAME_W, GAME_H - GROUND_Y - 2);
+    ctx.fillStyle = dirt;
+    ctx.fillRect(0, GROUND_Y + 3, GAME_W, GAME_H - GROUND_Y - 3);
 
-    ctx.fillStyle = world.night ? '#4a6a58' : '#6e5230';
-    for (let x = -world.groundOffset; x < GAME_W; x += 24) {
-      ctx.fillRect(x, GROUND_Y + 8, 8, 1);
-      if ((x / 24) % 3 === 0) ctx.fillRect(x + 14, GROUND_Y + 14, 2, 2);
+    const step = 4;
+    for (let x = -Math.floor(world.groundOffset) % step; x < GAME_W; x += step) {
+      for (let y = GROUND_Y + 6; y < GAME_H; y += step) {
+        const n = (Math.imul(x + 17, 374761393) ^ Math.imul(y + 31, 668265263)) >>> 0;
+        if (n % 5 === 0) {
+          ctx.fillStyle = dirtHi;
+          ctx.fillRect(x, y, 2, 2);
+        } else if (n % 7 === 0) {
+          ctx.fillStyle = dirtLo;
+          ctx.fillRect(x + 1, y + 1, 2, 2);
+        }
+      }
+      // Classic dust dashes under the line
+      if (((x / step) | 0) % 3 === 0) {
+        ctx.fillStyle = line;
+        ctx.fillRect(x, GROUND_Y + 10, 6, 2);
+      }
     }
   }
 
@@ -90,13 +114,14 @@ export class Renderer {
   ): void {
     const ctx = this.ctx;
     ctx.fillStyle = night ? '#f5f0d8' : '#1a2e28';
-    ctx.font = '16px "Fusion Pixel 12px Proportional SC", "Press Start 2P", monospace';
+    ctx.font =
+      '20px "Fusion Pixel 12px Proportional SC", "Press Start 2P", monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(`HI ${String(high).padStart(5, '0')}`, GAME_W - 14, 24);
-    ctx.fillText(String(score).padStart(5, '0'), GAME_W - 14, 46);
+    ctx.fillText(`HI ${String(high).padStart(5, '0')}`, GAME_W - 14, 28);
+    ctx.fillText(String(score).padStart(5, '0'), GAME_W - 14, 54);
     ctx.textAlign = 'left';
-    ctx.fillText(`DNA ${dnaMult}`, 14, 24);
-    if (shields > 0) ctx.fillText(`SHD ${shields}`, 14, 46);
+    ctx.fillText(`DNA ${dnaMult}`, 14, 28);
+    if (shields > 0) ctx.fillText(`SHD ${shields}`, 14, 54);
   }
 
   drawGameOver(score: number, dna: number): void {
