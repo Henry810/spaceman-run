@@ -9,7 +9,9 @@ import {
   DINO_W,
   OVERLAY_REMAPS,
   SCAR_MARKS,
+  SCAR_MARKS_DUCK,
   SKIN_PARTS,
+  SKIN_PARTS_DUCK,
   SPRITE_SCALE,
   type PixelGrid,
   drawGrid,
@@ -63,15 +65,13 @@ export function drawDinoSkin(
   drawGrid(ctx, body, x, y, scale, 1, remap);
 
   const isDuck = pose === 'duck';
-  if (!isDuck) {
-    const partX = x;
-    for (const part of getUnlockedSkinParts(skin.unlockedNodes)) {
-      const grid = SKIN_PARTS[part];
-      if (grid) drawGrid(ctx, grid, partX, y, scale);
-    }
-    if (skin.equippedOverlay === 'scar_base') {
-      drawGrid(ctx, SCAR_MARKS, partX, y, scale);
-    }
+  const partAtlas = isDuck ? SKIN_PARTS_DUCK : SKIN_PARTS;
+  for (const part of getUnlockedSkinParts(skin.unlockedNodes)) {
+    const grid = partAtlas[part];
+    if (grid) drawGrid(ctx, grid, x, y, scale);
+  }
+  if (skin.equippedOverlay === 'scar_base') {
+    drawGrid(ctx, isDuck ? SCAR_MARKS_DUCK : SCAR_MARKS, x, y, scale);
   }
 
   if (options?.shield || options?.flash) {
@@ -116,12 +116,13 @@ export function renderDinoPreview(
 ): void {
   const body = basePose(pose, 0);
   const layers: PixelGrid[] = [body];
-  if (pose !== 'duck') {
-    for (const part of getUnlockedSkinParts(skin.unlockedNodes)) {
-      const grid = SKIN_PARTS[part];
-      if (grid) layers.push(grid);
-    }
-    if (skin.equippedOverlay === 'scar_base') layers.push(SCAR_MARKS);
+  const partAtlas = pose === 'duck' ? SKIN_PARTS_DUCK : SKIN_PARTS;
+  for (const part of getUnlockedSkinParts(skin.unlockedNodes)) {
+    const grid = partAtlas[part];
+    if (grid) layers.push(grid);
+  }
+  if (skin.equippedOverlay === 'scar_base') {
+    layers.push(pose === 'duck' ? SCAR_MARKS_DUCK : SCAR_MARKS);
   }
   const b = unionGridBounds(layers);
   const pad = 5;

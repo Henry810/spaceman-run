@@ -562,7 +562,7 @@ function padPart(pixels: [number, number, string][]): PixelGrid {
   return rows.map((r) => r.join(''));
 }
 
-/** Evolution accents sit on the Chrome silhouette. */
+/** Evolution accents sit on the Chrome standing/jump silhouette. */
 export const SKIN_PARTS: Record<string, PixelGrid> = {
   agi_fins: padPart([[1, 30, 'a'], [1, 34, 'a'], [2, 28, 'a'], [2, 36, 'a'], [17, 6, 'a'], [18, 5, 'a']]),
   agi_legs: padPart([[38, 16, 'A'], [38, 26, 'A'], [40, 16, 'a'], [40, 26, 'a']]),
@@ -589,6 +589,202 @@ export const SKIN_PARTS: Record<string, PixelGrid> = {
   gene_mark5: padPart([[7, 30, 'm'], [9, 34, 'M'], [22, 15, 'm'], [24, 19, 'M'], [28, 16, 'm'], [28, 20, 'M']]),
   gene_mark6: padPart([[2, 31, 'M'], [2, 35, 'm'], [8, 29, 'm'], [8, 37, 'M'], [22, 14, 'M'], [26, 18, 'm'], [30, 16, 'M'], [30, 20, 'm']]),
 };
+
+function padDuckPart(pixels: [number, number, string][]): PixelGrid {
+  const rows = Array.from({ length: DINO_DUCK_H }, () =>
+    Array.from({ length: DINO_DUCK_W }, () => '.'),
+  );
+  for (const [row, col, ch] of pixels) {
+    if (row >= 0 && row < DINO_DUCK_H && col >= 0 && col < DINO_DUCK_W) {
+      rows[row][col] = ch;
+    }
+  }
+  return rows.map((r) => r.join(''));
+}
+
+/**
+ * Evolution accents remapped onto the official 59×47 duck cell
+ * (body ~rows 20–40). Standing parts are 44-wide and would misalign.
+ */
+export const SKIN_PARTS_DUCK: Record<string, PixelGrid> = {
+  agi_fins: padDuckPart([
+    [20, 8, 'a'],
+    [20, 12, 'a'],
+    [21, 6, 'a'],
+    [21, 48, 'a'],
+  ]),
+  agi_legs: padDuckPart([
+    [40, 14, 'A'],
+    [40, 28, 'A'],
+    [42, 14, 'a'],
+    [42, 28, 'a'],
+  ]),
+  agi_tail: padDuckPart([
+    [28, 3, 'a'],
+    [29, 2, 'A'],
+    [30, 4, 'a'],
+  ]),
+  agi_stream: padDuckPart([
+    [26, 18, 'a'],
+    [26, 19, 'a'],
+    [30, 10, 'a'],
+    [30, 11, 'a'],
+  ]),
+  agi_aura: padDuckPart([
+    [20, 20, 'a'],
+    [20, 40, 'a'],
+    [32, 8, 'a'],
+    [24, 50, 'a'],
+  ]),
+  agi_spark: padDuckPart([
+    [21, 16, 'a'],
+    [21, 44, 'a'],
+    [28, 12, 'a'],
+    [34, 22, 'a'],
+  ]),
+  arm_plate: padDuckPart([
+    [27, 22, 'r'],
+    [27, 23, 'R'],
+    [27, 24, 'r'],
+    [28, 21, 'R'],
+    [28, 22, 'r'],
+    [28, 23, 'R'],
+    [28, 24, 'r'],
+    [28, 25, 'R'],
+    [29, 22, 'r'],
+    [29, 23, 'R'],
+    [29, 24, 'r'],
+  ]),
+  arm_bracer: padDuckPart([
+    [30, 8, 'r'],
+    [31, 8, 'R'],
+    [32, 8, 'r'],
+    [30, 10, 'r'],
+    [31, 10, 'R'],
+  ]),
+  arm_scale: padDuckPart([
+    [24, 30, 'r'],
+    [28, 16, 'r'],
+    [30, 26, 'r'],
+    [32, 20, 'r'],
+  ]),
+  arm_helm: padDuckPart([
+    [21, 44, 'r'],
+    [21, 45, 'R'],
+    [21, 46, 'r'],
+    [22, 43, 'R'],
+    [22, 47, 'R'],
+  ]),
+  arm_shell: padDuckPart([
+    [26, 20, 'R'],
+    [26, 21, 'R'],
+    [26, 22, 'R'],
+    [26, 23, 'R'],
+    [27, 19, 'R'],
+    [27, 24, 'R'],
+    [30, 20, 'R'],
+    [30, 24, 'R'],
+  ]),
+  arm_spike: padDuckPart([
+    [25, 18, 'R'],
+    [25, 26, 'R'],
+    [24, 22, 'r'],
+    [31, 21, 'R'],
+    [31, 23, 'R'],
+  ]),
+  per_eyes: padDuckPart([
+    [22, 45, 'c'],
+    [22, 46, 'c'],
+    [23, 45, 'c'],
+    [23, 46, 'c'],
+  ]),
+  per_whisker: padDuckPart([
+    [24, 50, 'c'],
+    [25, 51, 'c'],
+  ]),
+  per_crest: padDuckPart([
+    [19, 42, 'c'],
+    [19, 44, 'c'],
+    [18, 41, 'C'],
+    [18, 45, 'C'],
+  ]),
+  per_glow: padDuckPart([
+    [21, 43, 'C'],
+    [22, 42, 'c'],
+    [22, 47, 'c'],
+  ]),
+  per_halo: padDuckPart([
+    [19, 40, 'c'],
+    [19, 41, 'c'],
+    [19, 46, 'c'],
+    [19, 47, 'c'],
+  ]),
+  per_orbit: padDuckPart([
+    [18, 39, 'c'],
+    [18, 43, 'c'],
+    [18, 48, 'c'],
+    [22, 38, 'C'],
+    [22, 50, 'C'],
+  ]),
+  gene_mark1: padDuckPart([
+    [28, 22, 'm'],
+    [29, 21, 'm'],
+    [29, 23, 'm'],
+    [30, 22, 'm'],
+  ]),
+  gene_mark2: padDuckPart([
+    [27, 21, 'm'],
+    [27, 23, 'm'],
+    [29, 20, 'm'],
+    [29, 24, 'm'],
+    [31, 21, 'm'],
+    [31, 23, 'm'],
+  ]),
+  gene_mark3: padDuckPart([
+    [26, 20, 'm'],
+    [26, 24, 'm'],
+    [28, 19, 'M'],
+    [28, 25, 'M'],
+    [30, 20, 'm'],
+    [30, 24, 'm'],
+  ]),
+  gene_mark4: padDuckPart([
+    [24, 36, 'M'],
+    [24, 40, 'm'],
+    [27, 20, 'm'],
+    [27, 24, 'M'],
+    [29, 22, 'm'],
+    [32, 21, 'M'],
+    [32, 23, 'm'],
+  ]),
+  gene_mark5: padDuckPart([
+    [23, 34, 'm'],
+    [25, 38, 'M'],
+    [27, 19, 'm'],
+    [29, 23, 'M'],
+    [32, 20, 'm'],
+    [32, 24, 'M'],
+  ]),
+  gene_mark6: padDuckPart([
+    [21, 42, 'M'],
+    [21, 46, 'm'],
+    [24, 33, 'm'],
+    [24, 41, 'M'],
+    [27, 18, 'M'],
+    [30, 22, 'm'],
+    [33, 20, 'M'],
+    [33, 24, 'm'],
+  ]),
+};
+
+export const SCAR_MARKS_DUCK: PixelGrid = padDuckPart([
+  [27, 18, 'd'],
+  [28, 17, 'd'],
+  [28, 19, 'd'],
+  [29, 18, 'd'],
+  [32, 12, 'd'],
+]);
+
 
 function stamp(canvas: string[][], sprite: PixelGrid, ox: number, oy: number): void {
   for (let r = 0; r < sprite.length; r++) {

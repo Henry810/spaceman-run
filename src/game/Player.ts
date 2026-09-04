@@ -108,7 +108,8 @@ export class Player {
       this.ducking || this.phase === 'duck' || this.phase === 'duckWindup';
     const gridH = ducking ? DINO_H : lastSolidRow(this.poseGrid) + 1;
     if (ducking) {
-      const box = { x: 1, y: 18, w: 55, h: 25 };
+      // Slightly tighter than Chrome (1,18,55,25) so low pteros clear when ducked
+      const box = { x: 1, y: 20, w: 55, h: 23 };
       return {
         x: this.x + box.x * SCALE + shrink,
         y: this.y - gridH * SCALE + box.y * SCALE + shrink,

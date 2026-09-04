@@ -30,9 +30,9 @@ const CACTUS_INSET: BoxInset = { x: 3, top: 3, bottom: 1 };
 
 /**
  * Ptero: ignore empty padding via gridBounds, then shrink wings/beak tips.
- * Body core only — wide wing AABB was unfair.
+ * Bottom inset keeps low birds clear of a ducked hitbox.
  */
-const PTERO_INSET: BoxInset = { x: 8, top: 5, bottom: 4 };
+const PTERO_INSET: BoxInset = { x: 8, top: 5, bottom: 6 };
 
 export type ObstacleKind =
   | 'cactusS'
@@ -83,10 +83,10 @@ function makeObstacle(kind: ObstacleKind, x: number): Obstacle {
   let y: number;
   if (kind === 'ptero') {
     const band = Math.random();
-    // Scaled for SPRITE_SCALE=2 — low band forces duck
-    if (band < 0.34) y = GROUND_Y - 58 * PIXEL;
-    else if (band < 0.67) y = GROUND_Y - 78 * PIXEL;
-    else y = GROUND_Y - 98 * PIXEL;
+    // Low: hits standing, clears duck. Mid/high: jump hazards.
+    if (band < 0.34) y = GROUND_Y - 67 * PIXEL;
+    else if (band < 0.67) y = GROUND_Y - 86 * PIXEL;
+    else y = GROUND_Y - 102 * PIXEL;
   } else {
     y = plantY(GROUND_Y, grid, PIXEL);
   }
