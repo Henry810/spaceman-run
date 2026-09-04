@@ -111,7 +111,8 @@ function go(screen: Screen): void {
   canvasHost.className = 'canvas-host';
   const hint = document.createElement('p');
   hint.className = 'hint';
-  hint.textContent = '空格短按小跳、按住高跳 · ↓ 蹲 · 触屏按住跳跃、下滑下蹲';
+  hint.textContent =
+    '空格短按小跳、按住高跳 · ↓ 蹲 · 触屏点按跳跃、向下滑下蹲';
 
   wrap.append(header, canvasHost, hint);
   app.append(wrap);
