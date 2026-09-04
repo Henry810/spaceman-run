@@ -74,17 +74,21 @@ export function drawDinoSkin(
     }
   }
 
-  const bw = body[0].length * scale;
-  const bh = body.length * scale;
-  if (options?.shield) {
-    ctx.strokeStyle = 'rgba(224, 144, 72, 0.9)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x + 4, y + 4, bw - 8, bh - 8);
-  }
-
-  if (options?.flash) {
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fillRect(x, y, bw, bh);
+  if (options?.shield || options?.flash) {
+    const b = gridBounds(body);
+    const bx = x + b.x * scale;
+    const by = y + b.y * scale;
+    const bw = b.w * scale;
+    const bh = b.h * scale;
+    if (options.shield) {
+      ctx.strokeStyle = 'rgba(224, 144, 72, 0.9)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(bx + 2, by + 2, bw - 4, bh - 4);
+    }
+    if (options.flash) {
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.fillRect(bx, by, bw, bh);
+    }
   }
 }
 
