@@ -2,21 +2,38 @@ export const GAME_W = 960;
 export const GAME_H = 300;
 export const GROUND_Y = 248;
 
+/** Chrome Cloud.config scaled ~2× for our canvas */
+const CLOUD_W = 46 * 2;
+const MAX_CLOUDS = 6;
+const MIN_CLOUD_GAP = 100 * 2;
+const MAX_CLOUD_GAP = 400 * 2;
+/** Sky band from top (Chrome 30–71 on 150px → ~40–120 here) */
+const MIN_SKY = 40;
+const MAX_SKY = 120;
+const BG_CLOUD_SPEED = 0.2;
+
 export class World {
   distance = 0;
   speed = 280;
   elapsed = 0;
   night = false;
-  clouds: { x: number; y: number; w: number }[] = [];
+  clouds: { x: number; y: number; gap: number }[] = [];
   groundOffset = 0;
 
   constructor() {
-    for (let i = 0; i < 5; i++) {
+    this.seedClouds();
+  }
+
+  private seedClouds(): void {
+    this.clouds = [];
+    let x = 60;
+    for (let i = 0; i < 3; i++) {
       this.clouds.push({
-        x: Math.random() * GAME_W,
-        y: 20 + Math.random() * 60,
-        w: 30 + Math.random() * 50,
+        x,
+        y: MIN_SKY + Math.random() * (MAX_SKY - MIN_SKY),
+        gap: MIN_CLOUD_GAP + Math.random() * (MAX_CLOUD_GAP - MIN_CLOUD_GAP),
       });
+      x += CLOUD_W + MIN_CLOUD_GAP + Math.random() * (MAX_CLOUD_GAP - MIN_CLOUD_GAP);
     }
   }
 
@@ -26,6 +43,7 @@ export class World {
     this.elapsed = 0;
     this.night = false;
     this.groundOffset = 0;
+    this.seedClouds();
   }
 
   update(dt: number, dashBoost = 0): void {
@@ -34,15 +52,24 @@ export class World {
     this.speed = base + dashBoost;
     this.distance += this.speed * dt;
     this.groundOffset = (this.groundOffset + this.speed * dt) % 24;
-    // Night cycles every ~45s of run time after score-ish distance
     this.night = Math.floor(this.distance / 3500) % 2 === 1;
 
+    const drift = this.speed * BG_CLOUD_SPEED * dt;
     for (const c of this.clouds) {
-      c.x -= this.speed * 0.15 * dt;
-      if (c.x + c.w < 0) {
-        c.x = GAME_W + Math.random() * 80;
-        c.y = 20 + Math.random() * 60;
-      }
+      c.x -= drift;
+    }
+    this.clouds = this.clouds.filter((c) => c.x + CLOUD_W > -10);
+
+    const last = this.clouds[this.clouds.length - 1];
+    const need =
+      this.clouds.length < MAX_CLOUDS &&
+      (!last || GAME_W - last.x > last.gap);
+    if (need) {
+      this.clouds.push({
+        x: GAME_W + Math.random() * 40,
+        y: MIN_SKY + Math.random() * (MAX_SKY - MIN_SKY),
+        gap: MIN_CLOUD_GAP + Math.random() * (MAX_CLOUD_GAP - MIN_CLOUD_GAP),
+      });
     }
   }
 

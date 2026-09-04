@@ -1,5 +1,5 @@
 import { drawDinoSkin, type SkinState } from '../art/skinLayers';
-import { SPRITE_SCALE } from '../art/sprites';
+import { CLOUD, SPRITE_SCALE, drawGrid } from '../art/sprites';
 import type { Player } from './Player';
 import type { World } from './World';
 import { GAME_H, GAME_W, GROUND_Y } from './World';
@@ -49,20 +49,18 @@ export class Renderer {
       ctx.fillRect(0, 0, GAME_W, GAME_H);
     }
 
-    // Chunkier pixel clouds (404 / offline dino feel)
-    const cloudFill = world.night ? '#6a7a88' : '#f5f5f5';
-    const cloudEdge = world.night ? '#3a4850' : '#d8d8d0';
+    // Chrome-style outline clouds (46×14 @ SPRITE_SCALE)
+    const cloudRemap = world.night ? { u: '#6a7888' } : undefined;
     for (const c of world.clouds) {
-      const bw = Math.max(4, Math.floor(c.w / 6));
-      const bh = 4;
-      const cx = Math.floor(c.x);
-      const cy = Math.floor(c.y);
-      ctx.fillStyle = cloudEdge;
-      ctx.fillRect(cx, cy, bw * 3, bh);
-      ctx.fillRect(cx + bw, cy - bh, bw * 2, bh);
-      ctx.fillStyle = cloudFill;
-      ctx.fillRect(cx + 1, cy + 1, bw * 3 - 2, bh - 1);
-      ctx.fillRect(cx + bw + 1, cy - bh + 1, bw * 2 - 2, bh - 1);
+      drawGrid(
+        ctx,
+        CLOUD,
+        Math.floor(c.x),
+        Math.floor(c.y),
+        SPRITE_SCALE,
+        1,
+        cloudRemap,
+      );
     }
 
     // Ground: solid fill + world-stable speckles (no flicker while scrolling)

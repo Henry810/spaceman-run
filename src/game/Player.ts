@@ -4,6 +4,7 @@ import {
   DINO_DUCK,
   DINO_DUCK_B,
   DINO_DUCK_W,
+  DINO_H,
   DINO_JUMP,
   DINO_RUN_A,
   DINO_RUN_B,
@@ -83,6 +84,10 @@ export class Player {
   }
 
   get drawHeight(): number {
+    // Duck shares Chrome's 47-tall cell so feet/shield stay plant-aligned.
+    if (this.ducking || this.phase === 'duck' || this.phase === 'duckWindup') {
+      return DINO_H * SCALE;
+    }
     return (lastSolidRow(this.poseGrid) + 1) * SCALE;
   }
 
@@ -94,19 +99,17 @@ export class Player {
   }
 
   /**
-   * Body core in sprite-grid units (44×47 stand/jump, 59×25 duck).
-   * Excludes snout tip, tail tip, and lower legs so a visually clear
-   * cactus jump does not false-collide.
+   * Hitboxes in sprite-grid units relative to top-left of the drawn cell.
+   * Duck: flat body at bottom of the 47-tall Chrome cell (matches shield).
    */
   get hitbox(): { x: number; y: number; w: number; h: number } {
     const shrink = this.bonuses.hitboxShrink;
     const ducking =
       this.ducking || this.phase === 'duck' || this.phase === 'duckWindup';
-    // {x,y,w,h} relative to top-left of the drawn pose grid
     const box = ducking
-      ? { x: 6, y: 1, w: 46, h: 12 }
+      ? { x: 1, y: 32, w: 55, h: 14 }
       : { x: 12, y: 6, w: 20, h: 28 };
-    const gridH = ducking ? 25 : lastSolidRow(this.poseGrid) + 1;
+    const gridH = ducking ? DINO_H : lastSolidRow(this.poseGrid) + 1;
     return {
       x: this.x + box.x * SCALE + shrink,
       y: this.y - gridH * SCALE + box.y * SCALE + shrink,
