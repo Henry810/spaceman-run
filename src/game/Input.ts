@@ -5,6 +5,8 @@ export class Input {
   rightHeld = false;
   jumpPressed = false;
   duckPressed = false;
+  /** Any tap / Space — used for game-over dismiss */
+  confirmPressed = false;
 
   private jumpLatch = false;
   private duckLatch = false;
@@ -44,6 +46,7 @@ export class Input {
   endFrame(): void {
     this.jumpPressed = false;
     this.duckPressed = false;
+    this.confirmPressed = false;
   }
 
   private blockScroll = (e: TouchEvent): void => {
@@ -83,6 +86,7 @@ export class Input {
     if (e.repeat) return;
     if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
       e.preventDefault();
+      this.confirmPressed = true;
       this.jumpHeld = true;
       if (!this.jumpLatch) {
         this.jumpPressed = true;
@@ -116,7 +120,10 @@ export class Input {
 
   private onPointerDown = (e: PointerEvent): void => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
+    // Don't steal clicks from HUD buttons (e.g. 返回舱门).
+    if ((e.target as HTMLElement | null)?.closest?.('button')) return;
     e.preventDefault();
+    this.confirmPressed = true;
     this.clearDuckReleaseTimer();
     this.pointerId = e.pointerId;
     this.startY = e.clientY;

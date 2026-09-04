@@ -77,7 +77,7 @@ export class Game {
       this.draw();
     } else {
       this.draw();
-      if (this.input.jumpPressed) {
+      if (this.input.confirmPressed || this.input.jumpPressed) {
         this.finish();
         return;
       }
