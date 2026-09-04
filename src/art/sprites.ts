@@ -550,88 +550,83 @@ export const CACTUS_X3 = makeCactusCluster(3);
 export const CACTUS_X4 = makeCactusCluster(4);
 
 /**
- * Museum gate — 798 concept-hall door frame (像素化馆门).
- * Pass through the center; pillars are light collision. 48×36
+ * Museum gate / cave arch — tall enough that standing & ducking pass the
+ * opening, but jumping hits the lintel. Built at 48×64 (128px @ scale 2).
  */
-export const MUSEUM_GATE: PixelGrid = [
-  'KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK',
-  'KkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkK',
-  'Kk............................................kK',
-  'Kk............................................kK',
-  'Kk.KK......................................KK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.Kk......................................kK.kK',
-  'Kk.KKKK..................................KKKK.kK',
-  'Kk............................................kK',
-  'Kk............................................kK',
-  'KkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkK',
-  'KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK',
-];
+const GATE_W = 48;
+/** Tall enough that a full jump still clips the lintel (can't vault over). */
+const GATE_H = 84;
+/** Top beam thickness in grid rows — keep in sync with obstacleHitboxes */
+export const GATE_LINTEL_ROWS = 10;
 
-/**
- * Habitat cave arch — museum diorama arch (造景拱门).
- * Center is open; rock pillars are light collision. 48×34
- */
-export const CAVE_ARCH: PixelGrid = [
-  '................NNNNNNNNNNNNNNNN................',
-  '............NNNNnnnnnnnnnnnnnnnnNNNN............',
-  '..........NNnnnn................nnnnNN..........',
-  '........NNnn........................nnNN........',
-  '.......NNn............................nNN.......',
-  '......NNn..............................nNN......',
-  '.....NNn................................nNN.....',
-  '.....Nn..................................nN.....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....Nn....................................nN....',
-  '....NnN..................................NnN....',
-  '....NNNn................................nNNN....',
-  '....NNNNNn..........................nnNNNNNN....',
-  '....NNNNNNNNNNNN............NNNNNNNNNNNNNNNN....',
-];
+function makeMuseumGate(): PixelGrid {
+  const rows: string[] = [];
+  for (let r = 0; r < GATE_H; r++) {
+    const line = Array.from({ length: GATE_W }, () => '.');
+    const set = (c: number, ch: string) => {
+      if (c >= 0 && c < GATE_W) line[c] = ch;
+    };
+    // Outer frame columns
+    set(0, 'K');
+    set(1, 'k');
+    set(GATE_W - 2, 'k');
+    set(GATE_W - 1, 'K');
+    if (r < GATE_LINTEL_ROWS || r >= GATE_H - 2) {
+      for (let c = 0; c < GATE_W; c++) set(c, r === 0 || r === GATE_H - 1 ? 'K' : 'k');
+    } else {
+      // Inner pillars
+      set(2, 'K');
+      set(3, 'k');
+      set(GATE_W - 4, 'k');
+      set(GATE_W - 3, 'K');
+    }
+    // Doorstep
+    if (r === GATE_H - 3) {
+      for (let c = 2; c < GATE_W - 2; c++) if (line[c] === '.') set(c, 'k');
+    }
+    rows.push(line.join(''));
+  }
+  return rows;
+}
+
+function makeCaveArch(): PixelGrid {
+  const rows: string[] = [];
+  const mid = (GATE_W - 1) / 2;
+  for (let r = 0; r < GATE_H; r++) {
+    const line = Array.from({ length: GATE_W }, () => '.');
+    const set = (c: number, ch: string) => {
+      if (c >= 0 && c < GATE_W) line[c] = ch;
+    };
+    // Opening starts below lintel; arch curves in the lintel band
+    if (r < GATE_LINTEL_ROWS) {
+      const t = r / GATE_LINTEL_ROWS;
+      // Half-width of hole grows with r (0 at top → wide at lintel bottom)
+      const hole = Math.floor(4 + t * 14);
+      for (let c = 0; c < GATE_W; c++) {
+        if (Math.abs(c - mid) >= hole) set(c, r < 2 ? 'N' : 'n');
+      }
+      // Cap stone row
+      if (r < 2) for (let c = 0; c < GATE_W; c++) set(c, 'N');
+    } else {
+      // Side pillars only — center open for stand/duck
+      set(0, 'N');
+      set(1, 'n');
+      set(2, 'n');
+      set(GATE_W - 3, 'n');
+      set(GATE_W - 2, 'n');
+      set(GATE_W - 1, 'N');
+      if (r > GATE_H - 4) {
+        set(3, 'n');
+        set(GATE_W - 4, 'n');
+      }
+    }
+    rows.push(line.join(''));
+  }
+  return rows;
+}
+
+export const MUSEUM_GATE: PixelGrid = makeMuseumGate();
+export const CAVE_ARCH: PixelGrid = makeCaveArch();
 
 /** Last row that contains a painted pixel (feet / cactus base). */
 export function lastSolidRow(grid: PixelGrid): number {

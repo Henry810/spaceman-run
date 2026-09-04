@@ -65,33 +65,35 @@ export class Renderer {
       ctx.fillRect(cx + bw + 1, cy - bh + 1, bw * 2 - 2, bh - 1);
     }
 
-    // Ground: solid bands + pointillism (no ground gradient)
+    // Ground: solid fill + world-stable speckles (no flicker while scrolling)
     const line = world.night ? '#2a3a30' : '#2a2218';
     const dirt = world.night ? '#1e2e28' : '#6b5230';
-    const dirtHi = world.night ? '#3a4e42' : '#8a6a38';
-    const dirtLo = world.night ? '#14201c' : '#4a3818';
+    const dirtHi = world.night ? '#354840' : '#7a6238';
+    const dirtLo = world.night ? '#18241e' : '#5a4828';
     ctx.fillStyle = line;
     ctx.fillRect(0, GROUND_Y, GAME_W, 3);
 
     ctx.fillStyle = dirt;
     ctx.fillRect(0, GROUND_Y + 3, GAME_W, GAME_H - GROUND_Y - 3);
 
-    const step = 4;
-    for (let x = -Math.floor(world.groundOffset) % step; x < GAME_W; x += step) {
-      for (let y = GROUND_Y + 6; y < GAME_H; y += step) {
-        const n = (Math.imul(x + 17, 374761393) ^ Math.imul(y + 31, 668265263)) >>> 0;
-        if (n % 5 === 0) {
+    const step = 8;
+    const scroll = world.groundOffset;
+    for (let sx = 0; sx < GAME_W; sx += step) {
+      const wx = Math.floor(sx + scroll);
+      for (let y = GROUND_Y + 8; y < GAME_H; y += step) {
+        const n =
+          (Math.imul(wx + 17, 374761393) ^ Math.imul(y + 31, 668265263)) >>> 0;
+        if (n % 11 === 0) {
           ctx.fillStyle = dirtHi;
-          ctx.fillRect(x, y, 2, 2);
-        } else if (n % 7 === 0) {
+          ctx.fillRect(sx, y, 2, 2);
+        } else if (n % 17 === 0) {
           ctx.fillStyle = dirtLo;
-          ctx.fillRect(x + 1, y + 1, 2, 2);
+          ctx.fillRect(sx + 2, y + 2, 2, 2);
         }
       }
-      // Classic dust dashes under the line
-      if (((x / step) | 0) % 3 === 0) {
+      if (((wx / step) | 0) % 4 === 0) {
         ctx.fillStyle = line;
-        ctx.fillRect(x, GROUND_Y + 10, 6, 2);
+        ctx.fillRect(sx, GROUND_Y + 11, 5, 2);
       }
     }
   }

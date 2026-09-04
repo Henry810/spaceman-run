@@ -5,6 +5,7 @@ import {
   CACTUS_X3,
   CACTUS_X4,
   CAVE_ARCH,
+  GATE_LINTEL_ROWS,
   MUSEUM_GATE,
   PTERO_A,
   PTERO_B,
@@ -76,12 +77,16 @@ function makeObstacle(kind: ObstacleKind, x: number): Obstacle {
   return { kind, x, y, grid, w: w * PIXEL, h: solidH * PIXEL };
 }
 
-/** Light obstacles: only side pillars collide (center passage). */
+/**
+ * Gates/arches: side pillars + high lintel.
+ * Standing & ducking clear the opening; jumping hits the beam.
+ */
 export function obstacleHitboxes(
   o: Obstacle,
 ): { x: number; y: number; w: number; h: number }[] {
   if (o.kind === 'museumDoor' || o.kind === 'caveArch') {
-    const pillar = 6 * PIXEL;
+    const pillar = 5 * PIXEL;
+    const lintelH = GATE_LINTEL_ROWS * PIXEL;
     return [
       { x: o.x + PIXEL, y: o.y + PIXEL, w: pillar, h: o.h - PIXEL * 2 },
       {
@@ -89,6 +94,12 @@ export function obstacleHitboxes(
         y: o.y + PIXEL,
         w: pillar,
         h: o.h - PIXEL * 2,
+      },
+      {
+        x: o.x + pillar,
+        y: o.y + PIXEL,
+        w: o.w - pillar * 2,
+        h: lintelH,
       },
     ];
   }
