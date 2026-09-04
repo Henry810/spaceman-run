@@ -83,7 +83,8 @@ export function drawDinoSkin(
     if (options.shield) {
       ctx.strokeStyle = 'rgba(224, 144, 72, 0.9)';
       ctx.lineWidth = 2;
-      ctx.strokeRect(bx + 2, by + 2, bw - 4, bh - 4);
+      // Exact solid AABB — inset was clipping the duck snout
+      ctx.strokeRect(bx + 0.5, by + 0.5, Math.max(1, bw - 1), Math.max(1, bh - 1));
     }
     if (options.flash) {
       ctx.fillStyle = 'rgba(255,255,255,0.4)';

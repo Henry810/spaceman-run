@@ -10,6 +10,7 @@ import {
   DINO_RUN_B,
   DINO_W,
   SPRITE_SCALE,
+  gridBounds,
   lastSolidRow,
 } from '../art/sprites';
 import { GROUND_Y } from './World';
@@ -99,17 +100,24 @@ export class Player {
   }
 
   /**
-   * Hitboxes in sprite-grid units relative to top-left of the drawn cell.
-   * Duck: flat body at bottom of the 47-tall Chrome cell (matches shield).
+   * Hitbox from the same solid bounds as the shield outline.
+   * Duck covers the full flat body including snout (no left-shifted stub).
    */
   get hitbox(): { x: number; y: number; w: number; h: number } {
     const shrink = this.bonuses.hitboxShrink;
     const ducking =
       this.ducking || this.phase === 'duck' || this.phase === 'duckWindup';
-    const box = ducking
-      ? { x: 1, y: 32, w: 55, h: 14 }
-      : { x: 12, y: 6, w: 20, h: 28 };
     const gridH = ducking ? DINO_H : lastSolidRow(this.poseGrid) + 1;
+    if (ducking) {
+      const b = gridBounds(this.poseGrid);
+      return {
+        x: this.x + b.x * SCALE + shrink,
+        y: this.y - gridH * SCALE + b.y * SCALE + shrink,
+        w: Math.max(SCALE, b.w * SCALE - shrink * 2),
+        h: Math.max(SCALE, b.h * SCALE - shrink * 2),
+      };
+    }
+    const box = { x: 12, y: 6, w: 20, h: 28 };
     return {
       x: this.x + box.x * SCALE + shrink,
       y: this.y - gridH * SCALE + box.y * SCALE + shrink,

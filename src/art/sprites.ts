@@ -216,23 +216,34 @@ function padDuckFrame(body: PixelGrid): PixelGrid {
   return [...Array.from({ length: pad }, () => blank), ...body];
 }
 
-/** Duck A — Chrome 59×47 cell, flat body + head forward (leg frame A) */
+/**
+ * Duck — Chrome 59×47 cell. Body fills the lower ~25 rows (same band as
+ * Trex.collisionBoxes.DUCKING y=18,h=25), not a 15px noodle strip.
+ */
 export const DINO_DUCK: PixelGrid = padDuckFrame([
   '.............................................sssssssssssssy',
   '.............................................sggggggggggggy',
   '.............................................sgbebpgggggggy',
   '.............................................sggggggggggggy',
   '.............................................sgggggggggggy.',
-  '...............................sssssssssssssssggggggGGGGGGG',
-  '....sssssssssssssssssssssssssssggggggggggggggggggggG.......',
-  '...sgggggggggggggggggggggggggggggggggggggggggggggGG........',
-  '..sgggggggggggggggggggggggggggggggggggggggggggggG..........',
-  '.sggggggggggggggggggggggggggggggggggggggggggggGG...........',
-  'sggggggggggggggggggggggggggggggggggggggggggggG.............',
-  'sGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG..............',
+  '.............................................sgggggggGGGGGG',
+  '...............................sssssssssssssssggggggG......',
+  '...............................sgggggggggggggggggggG.......',
+  '....sssssssssssssssssssssssssssggggggggggggggggggGG........',
+  '...sggggggggggggggggggggggggggggggggggggggggggggG..........',
+  '..sgggggggggggggggggggggggggggggggggggggggggggGG...........',
+  '.sgggggggggggggggggggggggggggggggggggggggggggG.............',
+  'sgggggggggggggggggggggggggggggggggggggggggggG..............',
+  'sggggggggggggggggggggggggggggggggggggggggggGG..............',
+  'sgggggggggggggggggggggggggggggggggggggggggGG...............',
+  'sGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG................',
+  'sGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.................',
+  '.GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG..................',
+  '...GGG.....................................................',
   '.....ttttt................ttttt............................',
   '.....tttbb................GGttt............................',
-  '.....bbbb.................bbbb.............................',
+  '.....tttb..................Gttt............................',
+  '.....bbbb..................bbbb............................',
 ]);
 
 /** Duck B — alternate legs */
@@ -242,16 +253,24 @@ export const DINO_DUCK_B: PixelGrid = padDuckFrame([
   '.............................................sgbebpgggggggy',
   '.............................................sggggggggggggy',
   '.............................................sgggggggggggy.',
-  '...............................sssssssssssssssggggggGGGGGGG',
-  '....sssssssssssssssssssssssssssggggggggggggggggggggG.......',
-  '...sgggggggggggggggggggggggggggggggggggggggggggggGG........',
-  '..sgggggggggggggggggggggggggggggggggggggggggggggG..........',
-  '.sggggggggggggggggggggggggggggggggggggggggggggGG...........',
-  'sggggggggggggggggggggggggggggggggggggggggggggG.............',
-  'sGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG..............',
+  '.............................................sgggggggGGGGGG',
+  '...............................sssssssssssssssggggggG......',
+  '...............................sgggggggggggggggggggG.......',
+  '....sssssssssssssssssssssssssssggggggggggggggggggGG........',
+  '...sggggggggggggggggggggggggggggggggggggggggggggG..........',
+  '..sgggggggggggggggggggggggggggggggggggggggggggGG...........',
+  '.sgggggggggggggggggggggggggggggggggggggggggggG.............',
+  'sgggggggggggggggggggggggggggggggggggggggggggG..............',
+  'sggggggggggggggggggggggggggggggggggggggggggGG..............',
+  'sgggggggggggggggggggggggggggggggggggggggggGG...............',
+  'sGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG................',
+  'sGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG.................',
+  '.GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG..................',
+  '...GGG.....................................................',
   '...............ttttt.................ttttt.................',
   '...............tttbb.................GGttt.................',
-  '...............bbbb..................bbbb..................',
+  '...............tttb...................Gttt.................',
+  '...............bbbb...................bbbb.................',
 ]);
 
 /** Chrome 1× cloud outline 46×14 */
