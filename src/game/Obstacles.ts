@@ -108,13 +108,16 @@ export function obstacleHitboxes(
 
 export class ObstacleManager {
   list: Obstacle[] = [];
-  private spawnTimer = 1.0;
+  private spawnTimer = 0.9;
   private previewQueue: { kind: ObstacleKind; in: number } | null = null;
+  /** Fixed opening lesson: single short → arch → double short → empty */
+  private introIndex = 0;
 
   reset(): void {
     this.list = [];
-    this.spawnTimer = 1.0;
+    this.spawnTimer = 0.9;
     this.previewQueue = null;
+    this.introIndex = 0;
   }
 
   update(
@@ -135,27 +138,37 @@ export class ObstacleManager {
     }
 
     if (this.spawnTimer <= 0 && !this.previewQueue) {
-      const kind = this.pickKind(distance);
-      const widthFactor =
-        kind === 'cactusX4'
-          ? 1.35
-          : kind === 'cactusX3'
-            ? 1.2
-            : kind === 'cactusX2'
-              ? 1.1
-              : kind === 'museumDoor' || kind === 'caveArch'
-                ? 1.15
-                : 1;
-      // Slightly denser than before (paired with larger dino + light gates)
-      const gap =
-        (0.88 + Math.random() * 0.72 - Math.min(0.4, distance / 20000)) *
-        widthFactor;
-      this.spawnTimer = Math.max(0.55, gap);
-
-      if (showPreview) {
-        this.previewQueue = { kind, in: previewLead };
+      if (this.introIndex < INTRO_BEATS.length) {
+        const beat = INTRO_BEATS[this.introIndex++];
+        if (beat === 'empty') {
+          this.spawnTimer = 1.45;
+        } else {
+          this.list.push(makeObstacle(beat, GAME_W + 10));
+          this.spawnTimer =
+            beat === 'caveArch' ? 1.35 : beat === 'cactusX2' ? 1.25 : 1.15;
+        }
       } else {
-        this.list.push(makeObstacle(kind, GAME_W + 10));
+        const kind = this.pickKind(distance);
+        const widthFactor =
+          kind === 'cactusX4'
+            ? 1.35
+            : kind === 'cactusX3'
+              ? 1.2
+              : kind === 'cactusX2'
+                ? 1.1
+                : kind === 'museumDoor' || kind === 'caveArch'
+                  ? 1.15
+                  : 1;
+        const gap =
+          (0.88 + Math.random() * 0.72 - Math.min(0.4, distance / 20000)) *
+          widthFactor;
+        this.spawnTimer = Math.max(0.55, gap);
+
+        if (showPreview) {
+          this.previewQueue = { kind, in: previewLead };
+        } else {
+          this.list.push(makeObstacle(kind, GAME_W + 10));
+        }
       }
     }
 
@@ -193,6 +206,13 @@ export class ObstacleManager {
     }
   }
 }
+
+const INTRO_BEATS: Array<ObstacleKind | 'empty'> = [
+  'cactusS',
+  'caveArch',
+  'cactusX2',
+  'empty',
+];
 
 export function aabb(
   a: { x: number; y: number; w: number; h: number },
