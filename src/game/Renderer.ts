@@ -76,24 +76,27 @@ export class Renderer {
     ctx.fillStyle = dirt;
     ctx.fillRect(0, GROUND_Y + 3, GAME_W, GAME_H - GROUND_Y - 3);
 
+    // Integer world scroll + screen offset so speckles slide, not pop/flicker
     const step = 8;
-    const scroll = world.groundOffset;
-    for (let sx = 0; sx < GAME_W; sx += step) {
-      const wx = Math.floor(sx + scroll);
+    const scroll = Math.floor(world.groundOffset);
+    const origin = -((scroll % step) + step) % step;
+    for (let sx = origin; sx < GAME_W; sx += step) {
+      const wx = sx + scroll;
+      const drawX = Math.floor(sx);
       for (let y = GROUND_Y + 8; y < GAME_H; y += step) {
         const n =
           (Math.imul(wx + 17, 374761393) ^ Math.imul(y + 31, 668265263)) >>> 0;
         if (n % 11 === 0) {
           ctx.fillStyle = dirtHi;
-          ctx.fillRect(sx, y, 2, 2);
+          ctx.fillRect(drawX, y, 2, 2);
         } else if (n % 17 === 0) {
           ctx.fillStyle = dirtLo;
-          ctx.fillRect(sx + 2, y + 2, 2, 2);
+          ctx.fillRect(drawX + 2, y + 2, 2, 2);
         }
       }
       if (((wx / step) | 0) % 4 === 0) {
         ctx.fillStyle = line;
-        ctx.fillRect(sx, GROUND_Y + 11, 5, 2);
+        ctx.fillRect(drawX, GROUND_Y + 11, 5, 2);
       }
     }
   }

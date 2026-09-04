@@ -78,28 +78,22 @@ function makeObstacle(kind: ObstacleKind, x: number): Obstacle {
 }
 
 /**
- * Gates/arches: side pillars + high lintel.
- * Standing & ducking clear the opening; jumping hits the beam.
+ * Gates/arches: lintel only.
+ * Player X is fixed, so pillar boxes always kill as they scroll past —
+ * stand/duck must pass the opening; only a jump clips the beam.
  */
 export function obstacleHitboxes(
   o: Obstacle,
 ): { x: number; y: number; w: number; h: number }[] {
   if (o.kind === 'museumDoor' || o.kind === 'caveArch') {
-    const pillar = 5 * PIXEL;
     const lintelH = GATE_LINTEL_ROWS * PIXEL;
+    const inset = PIXEL;
     return [
-      { x: o.x + PIXEL, y: o.y + PIXEL, w: pillar, h: o.h - PIXEL * 2 },
       {
-        x: o.x + o.w - pillar - PIXEL,
-        y: o.y + PIXEL,
-        w: pillar,
-        h: o.h - PIXEL * 2,
-      },
-      {
-        x: o.x + pillar,
-        y: o.y + PIXEL,
-        w: o.w - pillar * 2,
-        h: lintelH,
+        x: o.x + inset,
+        y: o.y + inset,
+        w: o.w - inset * 2,
+        h: lintelH - inset,
       },
     ];
   }

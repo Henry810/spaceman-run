@@ -16,8 +16,8 @@ import type { Input } from './Input';
 
 const BASE_JUMP_WINDUP = 0.08;
 const BASE_DUCK_WINDUP = 0.06;
-/** Tuned for SPRITE_SCALE=2 so peak clears tall cactus with margin */
-const BASE_JUMP_FORCE = -720;
+/** Peak clears tall cactus (~88px) with ~20px margin; not floaty */
+const BASE_JUMP_FORCE = -600;
 const GRAVITY = 1678;
 /** Faster fall after apex if jump is released — hang time only, same peak height */
 const FALL_RELEASE_MUL = 2.2;
