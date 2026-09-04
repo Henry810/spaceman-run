@@ -14,6 +14,7 @@ import {
 } from '../art/sprites';
 import { GROUND_Y } from './World';
 import type { Input } from './Input';
+import { playSfx } from '../audio/sfx';
 
 const BASE_JUMP_WINDUP = 0.08;
 const BASE_DUCK_WINDUP = 0.06;
@@ -267,6 +268,7 @@ export class Player {
     this.vy = BASE_JUMP_FORCE * this.bonuses.jumpForceMul;
     if (isDouble) this.vy *= 0.92;
     this.jumpsUsed = isDouble ? 2 : 1;
+    playSfx('jump');
   }
 
   /** Returns true if absorbed by shield */

@@ -9,6 +9,7 @@ import { Player } from './Player';
 import { ObstacleManager, aabb, obstacleHitboxes } from './Obstacles';
 import { World } from './World';
 import { Renderer } from './Renderer';
+import { playSfx, unlockAudio } from '../audio/sfx';
 
 export type GameResult = {
   score: number;
@@ -30,6 +31,7 @@ export class Game {
   private dashLeft = 0;
   private hitNight = false;
   private shieldUsed = false;
+  private lastScoreChime = 0;
   private bonuses;
   private skin: SkinState;
   private onDone: (r: GameResult) => void;
@@ -55,8 +57,10 @@ export class Game {
   }
 
   start(): void {
+    unlockAudio();
     this.running = true;
     this.over = false;
+    this.lastScoreChime = 0;
     this.last = performance.now();
     this.loop(this.last);
   }
@@ -94,6 +98,14 @@ export class Game {
     if (this.world.night) this.hitNight = true;
 
     this.player.update(dt, this.input);
+
+    const score = this.world.score;
+    const bucket = Math.floor(score / 100);
+    if (bucket > 0 && bucket > this.lastScoreChime) {
+      this.lastScoreChime = bucket;
+      playSfx('score');
+    }
+
     this.obstacles.update(
       dt,
       this.world.speed,
@@ -115,6 +127,7 @@ export class Game {
       if (outcome === 'shield') {
         this.shieldUsed = true;
         this.obstacles.list.splice(i, 1);
+        playSfx('shield');
         break;
       }
       if (outcome === 'dead') {
@@ -126,6 +139,7 @@ export class Game {
 
   private endRun(): void {
     this.over = true;
+    playSfx('hit');
     const score = this.world.score;
     const dna = scoreToDna(score, this.save.unlockedNodes);
 

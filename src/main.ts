@@ -8,6 +8,7 @@ import { renderLooks } from './ui/LooksUI';
 import { showToast } from './ui/Hud';
 import { createGameCanvas } from './game/Renderer';
 import { Game } from './game/Game';
+import { unlockAudio } from './audio/sfx';
 
 type Screen = 'menu' | 'play' | 'tree' | 'looks';
 
@@ -141,6 +142,9 @@ function go(screen: Screen): void {
 }
 
 try {
+  const unlockOnce = () => unlockAudio();
+  window.addEventListener('pointerdown', unlockOnce, { once: true });
+  window.addEventListener('keydown', unlockOnce, { once: true });
   go('menu');
 } catch (err) {
   const msg = err instanceof Error ? err.message : String(err);

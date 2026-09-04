@@ -1,6 +1,7 @@
 import { renderDinoPreview } from '../art/skinLayers';
 import { formatMultiplier } from '../meta/currency';
 import type { SaveData } from '../meta/save';
+import { isMuted, playSfx, toggleMute, unlockAudio } from '../audio/sfx';
 import { showOverlay } from './Hud';
 
 let menuSpaceHandler: ((e: KeyboardEvent) => void) | null = null;
@@ -66,11 +67,29 @@ export function renderMenu(
   const actions = document.createElement('div');
   actions.className = 'menu-actions';
 
-  const play = btn('出发探索', 'primary', handlers.onPlay);
-  const tree = btn('进化舱', '', handlers.onTree);
-  const looks = btn('图鉴与成就', '', handlers.onLooks);
+  const play = btn('出发探索', 'primary', () => {
+    unlockAudio();
+    playSfx('ui');
+    handlers.onPlay();
+  });
+  const tree = btn('进化舱', '', () => {
+    unlockAudio();
+    playSfx('ui');
+    handlers.onTree();
+  });
+  const looks = btn('图鉴与成就', '', () => {
+    unlockAudio();
+    playSfx('ui');
+    handlers.onLooks();
+  });
+  const mute = btn(isMuted() ? '音效：关' : '音效：开', 'ghost', () => {
+    unlockAudio();
+    const nowMuted = toggleMute();
+    mute.textContent = nowMuted ? '音效：关' : '音效：开';
+    if (!nowMuted) playSfx('ui');
+  });
   const reset = btn('重置游戏进度', 'ghost', () => confirmReset(handlers.onReset));
-  actions.append(play, tree, looks, reset);
+  actions.append(play, tree, looks, mute, reset);
 
   const credit = document.createElement('p');
   credit.className = 'brand-credit';
@@ -85,6 +104,8 @@ export function renderMenu(
     if (e.repeat) return;
     if (document.querySelector('.modal-overlay')) return;
     e.preventDefault();
+    unlockAudio();
+    playSfx('ui');
     handlers.onPlay();
   };
   window.addEventListener('keydown', menuSpaceHandler);
