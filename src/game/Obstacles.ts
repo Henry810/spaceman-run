@@ -81,12 +81,11 @@ function minGapPx(
   next: ObstacleKind | 'empty',
   speed: number,
 ): number {
-  // ~10% tighter than the original spawn-gap baselines
   if (next === 'empty') {
-    return Math.max(180, speed * 0.63);
+    return Math.max(200, speed * 0.7);
   }
   // ~one high jump of travel + land recovery
-  let gap = Math.max(198, speed * 0.738);
+  let gap = Math.max(220, speed * 0.82);
   if (prev === 'empty' || prev == null) {
     gap *= 0.9;
   } else {
