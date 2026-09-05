@@ -82,21 +82,21 @@ function minGapPx(
   speed: number,
 ): number {
   if (next === 'empty') {
-    return Math.max(200, speed * 0.7);
+    return Math.max(180, speed * 0.62);
   }
   // ~one high jump of travel + land recovery
-  let gap = Math.max(220, speed * 0.82);
+  let gap = Math.max(200, speed * 0.74);
   if (prev === 'empty' || prev == null) {
     gap *= 0.9;
   } else {
-    if (isJumpGround(prev)) gap *= 1.2;
-    if (isWideGround(prev)) gap *= 1.25;
-    if (isGate(prev)) gap *= 1.15;
+    if (isJumpGround(prev)) gap *= 1.14;
+    if (isWideGround(prev)) gap *= 1.18;
+    if (isGate(prev)) gap *= 1.1;
   }
-  if (isJumpGround(next)) gap *= 1.08;
-  if (isWideGround(next)) gap *= 1.12;
-  if (isGate(next)) gap *= 1.1;
-  if (next === 'ptero') gap *= 0.95;
+  if (isJumpGround(next)) gap *= 1.05;
+  if (isWideGround(next)) gap *= 1.08;
+  if (isGate(next)) gap *= 1.06;
+  if (next === 'ptero') gap *= 0.92;
   return gap;
 }
 
