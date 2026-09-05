@@ -80,8 +80,8 @@ function isGate(kind: ObstacleKind): boolean {
  * Density stays constant for the whole run; higher world speed only shortens
  * reaction time (world speed itself is capped in World.update).
  */
-const GAP_BASE_PX = 320;
-const GAP_EMPTY_PX = 320;
+const GAP_BASE_PX = 384;
+const GAP_EMPTY_PX = 384;
 
 function minGapPx(
   prev: ObstacleKind | 'empty' | null,
