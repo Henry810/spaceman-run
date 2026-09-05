@@ -77,32 +77,41 @@ function isGate(kind: ObstacleKind): boolean {
 
 /**
  * Min clear space (px) between previous right edge and next left edge.
- * Uses early-game reference speed so on-screen density stays similar late-run;
- * higher world speed then shortens reaction time instead of stretching gaps.
+ * Early runs use a higher virtual speed (wider gaps); late runs ease toward
+ * denser on-screen packing instead of stretching with world speed.
  */
-const GAP_VISUAL_SPEED = 280;
+const SPEED_LO = 280;
+const SPEED_HI = 500;
+
+function gapScaleSpeed(worldSpeed: number): number {
+  const t = Math.max(0, Math.min(1, (worldSpeed - SPEED_LO) / (SPEED_HI - SPEED_LO)));
+  // Early ~1.25× open; late ~0.78× open vs a 280 baseline.
+  return SPEED_LO * (1.25 * (1 - t) + 0.78 * t);
+}
 
 function minGapPx(
   prev: ObstacleKind | 'empty' | null,
   next: ObstacleKind | 'empty',
-  _speed: number,
+  speed: number,
 ): number {
+  const gs = gapScaleSpeed(speed);
   if (next === 'empty') {
-    return Math.max(200, GAP_VISUAL_SPEED * 0.7);
+    // Forced breathers stay a bit shorter than obstacle gaps so late-game
+    // wide clusters don't read as huge empty deserts.
+    return Math.max(170, gs * 0.58);
   }
-  // ~one high jump of travel + land recovery (at early-game pace)
-  let gap = Math.max(220, GAP_VISUAL_SPEED * 0.82);
+  let gap = Math.max(240, gs * 0.82);
   if (prev === 'empty' || prev == null) {
-    gap *= 0.9;
+    gap *= 0.92;
   } else {
-    if (isJumpGround(prev)) gap *= 1.2;
-    if (isWideGround(prev)) gap *= 1.25;
-    if (isGate(prev)) gap *= 1.15;
+    if (isJumpGround(prev)) gap *= 1.16;
+    if (isWideGround(prev)) gap *= 1.18;
+    if (isGate(prev)) gap *= 1.12;
   }
-  if (isJumpGround(next)) gap *= 1.08;
-  if (isWideGround(next)) gap *= 1.12;
-  if (isGate(next)) gap *= 1.1;
-  if (next === 'ptero') gap *= 0.95;
+  if (isJumpGround(next)) gap *= 1.06;
+  if (isWideGround(next)) gap *= 1.1;
+  if (isGate(next)) gap *= 1.08;
+  if (next === 'ptero') gap *= 0.94;
   return gap;
 }
 
@@ -316,12 +325,11 @@ export class ObstacleManager {
     // After a jump-ground hazard, prefer breathers / high birds / short cactus.
     if (prevJump || prevLowPtero) {
       const roll = Math.random();
-      if (roll < 0.35) return 'cactusS';
-      if (distance > 1400 && roll < 0.7) return 'ptero';
-      if (distance > 900 && roll < 0.85) {
+      if (roll < 0.42) return 'cactusS';
+      if (distance > 1400 && roll < 0.72) return 'ptero';
+      if (distance > 900 && roll < 0.88) {
         return Math.random() < 0.5 ? 'museumDoor' : 'caveArch';
       }
-      // Soft fallback: short cactus rather than another tall cluster
       return 'cactusS';
     }
 
@@ -332,11 +340,11 @@ export class ObstacleManager {
     if (distance > 1400 && r < 0.28) return 'ptero';
 
     const g = Math.random();
-    // Don't stack wide clusters back-to-back (pendingEmpty also guards).
-    if (distance > 5000 && g < 0.12 && prev !== 'cactusX4' && prev !== 'cactusX3') {
+    // Late wide clusters: a bit rarer so forced empty beats don't dominate density.
+    if (distance > 5000 && g < 0.08 && prev !== 'cactusX4' && prev !== 'cactusX3') {
       return 'cactusX4';
     }
-    if (distance > 2500 && g < 0.22 && prev !== 'cactusX3' && prev !== 'cactusX4') {
+    if (distance > 2500 && g < 0.16 && prev !== 'cactusX3' && prev !== 'cactusX4') {
       return 'cactusX3';
     }
     if (g < 0.28) return 'cactusX2';
