@@ -81,22 +81,23 @@ function minGapPx(
   next: ObstacleKind | 'empty',
   speed: number,
 ): number {
+  // ~10% tighter than the original spawn-gap baselines
   if (next === 'empty') {
-    return Math.max(98, speed * 0.338);
+    return Math.max(180, speed * 0.63);
   }
   // ~one high jump of travel + land recovery
-  let gap = Math.max(109, speed * 0.402);
+  let gap = Math.max(198, speed * 0.738);
   if (prev === 'empty' || prev == null) {
     gap *= 0.9;
   } else {
-    if (isJumpGround(prev)) gap *= 1.14;
-    if (isWideGround(prev)) gap *= 1.18;
-    if (isGate(prev)) gap *= 1.1;
+    if (isJumpGround(prev)) gap *= 1.2;
+    if (isWideGround(prev)) gap *= 1.25;
+    if (isGate(prev)) gap *= 1.15;
   }
-  if (isJumpGround(next)) gap *= 1.05;
-  if (isWideGround(next)) gap *= 1.08;
-  if (isGate(next)) gap *= 1.06;
-  if (next === 'ptero') gap *= 0.92;
+  if (isJumpGround(next)) gap *= 1.08;
+  if (isWideGround(next)) gap *= 1.12;
+  if (isGate(next)) gap *= 1.1;
+  if (next === 'ptero') gap *= 0.95;
   return gap;
 }
 
