@@ -588,6 +588,10 @@ export const SKIN_PARTS: Record<string, PixelGrid> = {
   per_orbit: padPart([[0, 29, 'c'], [0, 33, 'c'], [0, 37, 'c'], [4, 27, 'C'], [4, 39, 'C']]),
   gene_mark5: padPart([[7, 30, 'm'], [9, 34, 'M'], [22, 15, 'm'], [24, 19, 'M'], [28, 16, 'm'], [28, 20, 'M']]),
   gene_mark6: padPart([[2, 31, 'M'], [2, 35, 'm'], [8, 29, 'm'], [8, 37, 'M'], [22, 14, 'M'], [26, 18, 'm'], [30, 16, 'M'], [30, 20, 'm']]),
+  apex_boost: padPart([[0, 28, 'C'], [0, 32, 'C'], [0, 36, 'c'], [1, 30, 'c'], [1, 34, 'c'], [16, 8, 'C']]),
+  apex_echo: padPart([[4, 26, 'm'], [4, 40, 'm'], [18, 10, 'M'], [34, 20, 'm'], [36, 24, 'M']]),
+  apex_bolt: padPart([[20, 14, 'C'], [21, 15, 'c'], [22, 16, 'C'], [23, 17, 'c'], [24, 18, 'C']]),
+  apex_flex: padPart([[17, 12, 'a'], [18, 11, 'A'], [19, 12, 'a'], [38, 18, 'A'], [40, 22, 'a'], [2, 34, 'a']]),
 };
 
 function padDuckPart(pixels: [number, number, string][]): PixelGrid {
@@ -774,6 +778,36 @@ export const SKIN_PARTS_DUCK: Record<string, PixelGrid> = {
     [30, 22, 'm'],
     [33, 20, 'M'],
     [33, 24, 'm'],
+  ]),
+  apex_boost: padDuckPart([
+    [20, 40, 'C'],
+    [20, 44, 'C'],
+    [20, 48, 'c'],
+    [21, 42, 'c'],
+    [21, 46, 'c'],
+    [25, 16, 'C'],
+  ]),
+  apex_echo: padDuckPart([
+    [22, 38, 'm'],
+    [22, 50, 'm'],
+    [26, 18, 'M'],
+    [34, 24, 'm'],
+    [36, 28, 'M'],
+  ]),
+  apex_bolt: padDuckPart([
+    [27, 18, 'C'],
+    [28, 19, 'c'],
+    [29, 20, 'C'],
+    [30, 21, 'c'],
+    [31, 22, 'C'],
+  ]),
+  apex_flex: padDuckPart([
+    [25, 16, 'a'],
+    [26, 15, 'A'],
+    [27, 16, 'a'],
+    [34, 22, 'A'],
+    [36, 26, 'a'],
+    [21, 44, 'a'],
   ]),
 };
 

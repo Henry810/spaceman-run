@@ -70,14 +70,16 @@ export class Player {
   }
 
   get pose(): DinoPose {
+    if (this.ducking || this.phase === 'duck' || this.phase === 'duckWindup') {
+      return 'duck';
+    }
     if (this.phase === 'jumpWindup') return 'windup';
-    if (this.phase === 'duck' || this.phase === 'duckWindup') return 'duck';
     if (this.phase === 'air') return 'jump';
     return this.animTime % 0.2 < 0.1 ? 'runA' : 'runB';
   }
 
   get poseGrid() {
-    if (this.phase === 'duck' || this.phase === 'duckWindup') {
+    if (this.ducking || this.phase === 'duck' || this.phase === 'duckWindup') {
       return this.animTime % 0.2 < 0.1 ? DINO_DUCK : DINO_DUCK_B;
     }
     if (this.phase === 'air' || this.phase === 'jumpWindup') return DINO_JUMP;
@@ -149,9 +151,12 @@ export class Player {
     }
 
     if (this.phase === 'jumpWindup') {
-      // Swipe/zone duck can cancel a pending jump.
-      if (input.duckPressed || input.duckHeld) {
+      if (
+        this.bonuses.flexCancel &&
+        (input.duckPressed || input.duckHeld)
+      ) {
         this.windupTimer = 0;
+        playSfx('flex');
         this.beginDuck(true);
         return;
       }
@@ -161,6 +166,12 @@ export class Player {
     }
 
     if (this.phase === 'duckWindup') {
+      if (this.bonuses.flexCancel && input.jumpPressed) {
+        this.windupTimer = 0;
+        playSfx('flex');
+        this.beginJump();
+        return;
+      }
       this.windupTimer -= dt;
       if (this.windupTimer <= 0) {
         this.phase = 'duck';
@@ -172,18 +183,27 @@ export class Player {
     const onGround = this.y >= GROUND_Y - 0.5 && this.vy >= 0;
 
     if (this.phase === 'duck') {
+      if (this.bonuses.flexCancel && input.jumpPressed) {
+        playSfx('flex');
+        this.beginJump();
+        return;
+      }
       if (!input.duckHeld) {
         this.ducking = false;
         this.phase = 'run';
       }
-      if (input.jumpPressed) this.beginJump();
       return;
     }
 
+    // Landing is the only place jump charges refresh (incl. after flex cancels).
     if (onGround && this.phase === 'air') {
       this.y = GROUND_Y;
       this.vy = 0;
       this.jumpsUsed = 0;
+      if (this.ducking || input.duckHeld) {
+        this.beginDuck(true);
+        return;
+      }
       const recovery = BASE_LAND_RECOVERY * this.bonuses.landRecoveryMul;
       if (recovery > 0.01) {
         this.phase = 'landRecovery';
@@ -196,13 +216,24 @@ export class Player {
     // Handle air (incl. double jump) BEFORE ground jump start, so a near-instant
     // first jump cannot consume jumpPressed for the double jump in the same frame.
     if (this.phase === 'air') {
+      if (this.bonuses.flexCancel && input.duckPressed) {
+        // Interrupt rise into airborne duck — do not refresh jumps until land.
+        if (!this.ducking) playSfx('flex');
+        this.ducking = true;
+        if (this.vy < 0) this.vy = 0;
+      } else if (this.ducking && !input.duckHeld) {
+        this.ducking = false;
+      }
+
       if (
         input.jumpPressed &&
         this.bonuses.doubleJump &&
         this.jumpsUsed === 1
       ) {
+        this.ducking = false;
         this.launchJump(true);
       }
+
       if (this.bonuses.airDrift > 0) {
         if (input.leftHeld) this.x -= this.bonuses.airDrift * dt;
         if (input.rightHeld) this.x += this.bonuses.airDrift * dt;
@@ -242,7 +273,7 @@ export class Player {
   }
 
   private beginDuck(fromCancel = false): void {
-    if (this.phase === 'air') return;
+    if (this.phase === 'air' && !fromCancel) return;
     if (
       !fromCancel &&
       this.phase !== 'run' &&
@@ -251,14 +282,15 @@ export class Player {
       return;
     }
     const windup = BASE_DUCK_WINDUP * this.bonuses.duckWindupMul;
-    this.jumpsUsed = 0;
     this.vy = 0;
+    this.y = GROUND_Y;
     if (windup < 0.02) {
       this.phase = 'duck';
       this.ducking = true;
     } else {
       this.phase = 'duckWindup';
       this.windupTimer = windup;
+      this.ducking = true;
     }
   }
 

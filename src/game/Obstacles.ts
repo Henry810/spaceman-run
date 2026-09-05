@@ -205,49 +205,68 @@ export class ObstacleManager {
     this.pendingEmpty = false;
   }
 
+  /** Drop pending preview spawn (used during warp dashes). */
+  clearPreview(): void {
+    this.previewQueue = null;
+    this.spawnTimer = 0.85;
+  }
+
+  /** Skip hardcoded intro beats (after open-run warp past that segment). */
+  skipIntro(): void {
+    this.introIndex = INTRO_BEATS.length;
+    this.lastKind = 'empty';
+    this.lastPteroBand = undefined;
+    this.pendingEmpty = false;
+    this.spawnTimer = 0.6;
+    this.previewQueue = null;
+  }
+
   update(
     dt: number,
     speed: number,
     distance: number,
     showPreview: boolean,
     previewLead = 0.55,
+    allowSpawn = true,
   ): void {
-    this.spawnTimer -= dt;
+    if (allowSpawn) {
+      this.spawnTimer -= dt;
 
-    if (this.previewQueue) {
-      this.previewQueue.in -= dt;
-      if (this.previewQueue.in <= 0) {
-        this.pushSpawn(this.previewQueue.kind, speed);
-        this.previewQueue = null;
-      }
-    }
-
-    if (this.spawnTimer <= 0 && !this.previewQueue) {
-      if (this.introIndex < INTRO_BEATS.length) {
-        const beat = INTRO_BEATS[this.introIndex++];
-        if (beat === 'empty') {
-          this.spawnTimer = 1.45;
-          this.lastKind = 'empty';
-          this.lastPteroBand = undefined;
-        } else {
-          const o = makeObstacle(beat, GAME_W + 10);
-          this.list.push(o);
-          this.lastKind = beat;
-          this.lastPteroBand = o.pteroBand;
-          this.spawnTimer =
-            beat === 'caveArch' ? 1.35 : beat === 'cactusX2' ? 1.25 : 1.15;
+      if (this.previewQueue) {
+        this.previewQueue.in -= dt;
+        if (this.previewQueue.in <= 0) {
+          this.pushSpawn(this.previewQueue.kind, speed);
+          this.previewQueue = null;
         }
-      } else if (this.pendingEmpty) {
-        this.pendingEmpty = false;
-        this.scheduleEmpty(speed);
-      } else {
-        const kind = this.pickKind(distance);
-        if (showPreview) {
-          // Hold spawn until preview resolves; gap starts after real spawn.
-          this.spawnTimer = 999;
-          this.previewQueue = { kind, in: previewLead };
+      }
+
+      if (this.spawnTimer <= 0 && !this.previewQueue) {
+        if (this.introIndex < INTRO_BEATS.length) {
+          const beat = INTRO_BEATS[this.introIndex++];
+          if (beat === 'empty') {
+            this.spawnTimer = 1.45;
+            this.lastKind = 'empty';
+            this.lastPteroBand = undefined;
+          } else {
+            const o = makeObstacle(beat, GAME_W + 10);
+            this.list.push(o);
+            this.lastKind = beat;
+            this.lastPteroBand = o.pteroBand;
+            this.spawnTimer =
+              beat === 'caveArch' ? 1.35 : beat === 'cactusX2' ? 1.25 : 1.15;
+          }
+        } else if (this.pendingEmpty) {
+          this.pendingEmpty = false;
+          this.scheduleEmpty(speed);
         } else {
-          this.pushSpawn(kind, speed);
+          const kind = this.pickKind(distance);
+          if (showPreview) {
+            // Hold spawn until preview resolves; gap starts after real spawn.
+            this.spawnTimer = 999;
+            this.previewQueue = { kind, in: previewLead };
+          } else {
+            this.pushSpawn(kind, speed);
+          }
         }
       }
     }
@@ -259,6 +278,11 @@ export class ObstacleManager {
       }
     }
     this.list = this.list.filter((o) => o.x + o.w > -20);
+  }
+
+  clearAll(): void {
+    this.list = [];
+    this.previewQueue = null;
   }
 
   private scheduleEmpty(speed: number): void {

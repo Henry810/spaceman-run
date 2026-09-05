@@ -9,7 +9,7 @@ import type { SaveData } from '../meta/save';
 import { writeSave } from '../meta/save';
 import { showOverlay, showToast } from './Hud';
 
-const BRANCHES: BranchId[] = ['agi', 'arm', 'per', 'gene'];
+const BRANCHES: BranchId[] = ['agi', 'arm', 'per', 'gene', 'apex'];
 
 export function renderTree(
   root: HTMLElement,

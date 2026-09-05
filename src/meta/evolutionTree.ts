@@ -1,4 +1,7 @@
-export type BranchId = 'agi' | 'arm' | 'per' | 'gene';
+export type BranchId = 'agi' | 'arm' | 'per' | 'gene' | 'apex';
+
+/** Score-meter units shown on HUD (world.distance / 10). */
+export const APEX_CORE_REQUIRES = ['agi_6', 'arm_6', 'per_6', 'gene_6'] as const;
 
 export interface NodeEffects {
   jumpWindupMul?: number;
@@ -15,6 +18,14 @@ export interface NodeEffects {
   startDashMs?: number;
   dnaMultiplier?: number;
   dnaBonus?: number;
+  /** Open-run warp to this HUD score (meters). */
+  startWarpMeters?: number;
+  /** After death, warp this many HUD meters then still game-over. */
+  deathWarpMeters?: number;
+  /** Seconds between auto projectiles that destroy the first obstacle ahead. */
+  boltIntervalSec?: number;
+  /** Jump↔duck can interrupt each other (incl. mid-air duck cancel). */
+  flexCancel?: boolean;
 }
 
 export interface EvolutionNode {
@@ -39,6 +50,7 @@ export const BRANCH_META: Record<
   arm: { name: '鳞甲', color: '#c47a3a', accent: '#ffb06b' },
   per: { name: '探照', color: '#4a8fd4', accent: '#8ec8ff' },
   gene: { name: '共生', color: '#c45a8c', accent: '#ff9ec8' },
+  apex: { name: '典藏', color: '#d4a017', accent: '#ffe066' },
 };
 
 export const EVOLUTION_NODES: EvolutionNode[] = [
@@ -316,6 +328,52 @@ export const EVOLUTION_NODES: EvolutionNode[] = [
     skinPart: 'gene_mark6',
     order: 5,
   },
+
+  // Apex finals — require all four branch tips (implies 4×6 filled); independent of each other
+  {
+    id: 'apex_start',
+    branch: 'apex',
+    name: '开馆疾冲',
+    description: '开局超高速冲刺至 800 米，接近时减速，抵达后短暂无敌',
+    cost: 4000,
+    requires: [...APEX_CORE_REQUIRES],
+    effects: { startWarpMeters: 800 },
+    skinPart: 'apex_boost',
+    order: 0,
+  },
+  {
+    id: 'apex_revive',
+    branch: 'apex',
+    name: '蜕皮余温',
+    description: '死后冲刺 400 米（同速感），冲刺结束后仍判定死亡',
+    cost: 4000,
+    requires: [...APEX_CORE_REQUIRES],
+    effects: { deathWarpMeters: 400 },
+    skinPart: 'apex_echo',
+    order: 1,
+  },
+  {
+    id: 'apex_bolt',
+    branch: 'apex',
+    name: '鳞光清道',
+    description: '每 8 秒向前发射射弹，自动摧毁碰到的第一个障碍',
+    cost: 4000,
+    requires: [...APEX_CORE_REQUIRES],
+    effects: { boltIntervalSec: 8 },
+    skinPart: 'apex_bolt',
+    order: 2,
+  },
+  {
+    id: 'apex_flex',
+    branch: 'apex',
+    name: '摸鳞闪转',
+    description: '点击蹲下可打断跳跃（含空中），跳跃可打断蹲下',
+    cost: 4000,
+    requires: [...APEX_CORE_REQUIRES],
+    effects: { flexCancel: true },
+    skinPart: 'apex_flex',
+    order: 3,
+  },
 ];
 
 export function getNode(id: string): EvolutionNode | undefined {
@@ -345,6 +403,10 @@ export interface RuntimeBonuses {
   startDashMs: number;
   dnaMultiplier: number;
   dnaBonus: number;
+  startWarpMeters: number;
+  deathWarpMeters: number;
+  boltIntervalSec: number;
+  flexCancel: boolean;
 }
 
 export function computeBonuses(unlocked: string[]): RuntimeBonuses {
@@ -363,6 +425,10 @@ export function computeBonuses(unlocked: string[]): RuntimeBonuses {
     startDashMs: 0,
     dnaMultiplier: 1,
     dnaBonus: 0,
+    startWarpMeters: 0,
+    deathWarpMeters: 0,
+    boltIntervalSec: 0,
+    flexCancel: false,
   };
 
   for (const id of unlocked) {
@@ -399,6 +465,16 @@ export function computeBonuses(unlocked: string[]): RuntimeBonuses {
       bonuses.dnaMultiplier = Math.max(bonuses.dnaMultiplier, e.dnaMultiplier);
     }
     if (e.dnaBonus != null) bonuses.dnaBonus += e.dnaBonus;
+    if (e.startWarpMeters != null) {
+      bonuses.startWarpMeters = Math.max(bonuses.startWarpMeters, e.startWarpMeters);
+    }
+    if (e.deathWarpMeters != null) {
+      bonuses.deathWarpMeters = Math.max(bonuses.deathWarpMeters, e.deathWarpMeters);
+    }
+    if (e.boltIntervalSec != null) {
+      bonuses.boltIntervalSec = Math.max(bonuses.boltIntervalSec, e.boltIntervalSec);
+    }
+    if (e.flexCancel) bonuses.flexCancel = true;
   }
 
   return bonuses;
