@@ -75,17 +75,23 @@ function isGate(kind: ObstacleKind): boolean {
   return kind === 'museumDoor' || kind === 'caveArch';
 }
 
-/** Min clear space (px) between previous right edge and next left edge. */
+/**
+ * Min clear space (px) between previous right edge and next left edge.
+ * Uses early-game reference speed so on-screen density stays similar late-run;
+ * higher world speed then shortens reaction time instead of stretching gaps.
+ */
+const GAP_VISUAL_SPEED = 280;
+
 function minGapPx(
   prev: ObstacleKind | 'empty' | null,
   next: ObstacleKind | 'empty',
-  speed: number,
+  _speed: number,
 ): number {
   if (next === 'empty') {
-    return Math.max(200, speed * 0.7);
+    return Math.max(200, GAP_VISUAL_SPEED * 0.7);
   }
-  // ~one high jump of travel + land recovery
-  let gap = Math.max(220, speed * 0.82);
+  // ~one high jump of travel + land recovery (at early-game pace)
+  let gap = Math.max(220, GAP_VISUAL_SPEED * 0.82);
   if (prev === 'empty' || prev == null) {
     gap *= 0.9;
   } else {

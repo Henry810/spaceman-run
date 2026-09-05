@@ -35,7 +35,8 @@ export function renderTree(
   watchAd.textContent = '看广告 +200';
   watchAd.addEventListener('click', () => {
     watchAd.disabled = true;
-    playFakeAd(() => {
+    cheatAd.disabled = true;
+    playFakeAd(5, 200, () => {
       save.dna += 200;
       writeSave(save);
       onChanged(save);
@@ -43,7 +44,22 @@ export function renderTree(
       showToast('+200 DNA');
     });
   });
-  toolbar.append(chip, watchAd);
+  const cheatAd = document.createElement('button');
+  cheatAd.className = 'btn tree-ad-btn tree-ad-cheat';
+  cheatAd.textContent = '作弊广告 +20000';
+  cheatAd.title = '观看 30 秒广告领取 20000 DNA';
+  cheatAd.addEventListener('click', () => {
+    watchAd.disabled = true;
+    cheatAd.disabled = true;
+    playFakeAd(30, 20000, () => {
+      save.dna += 20000;
+      writeSave(save);
+      onChanged(save);
+      renderTree(root, save, onBack, onChanged);
+      showToast('+20000 DNA');
+    });
+  });
+  toolbar.append(chip, watchAd, cheatAd);
 
   const back = document.createElement('button');
   back.className = 'btn ghost';
@@ -134,24 +150,28 @@ export function tryUnlockNode(save: SaveData, nodeId: string): boolean {
   return true;
 }
 
-function playFakeAd(onDone: () => void): void {
+function playFakeAd(
+  seconds: number,
+  reward: number,
+  onDone: () => void,
+): void {
   const card = document.createElement('div');
   card.className = 'modal-card';
   card.innerHTML = `
-    <div class="ad-kicker">广告占位</div>
+    <div class="ad-kicker">${reward >= 20000 ? '作弊广告占位' : '广告占位'}</div>
     <h3>太空人爬宠俱乐部</h3>
     <p>798 · 零距离邂逅爬行动物。冷血动物并不冷血——来馆里摸摸鳞片、听听科普。</p>
-    <div class="ad-timer">5</div>
+    <div class="ad-timer">${seconds}</div>
   `;
   const close = document.createElement('button');
   close.className = 'btn primary';
   close.disabled = true;
-  close.textContent = '关闭 (5)';
+  close.textContent = `关闭 (${seconds})`;
   card.append(close);
 
   const overlay = showOverlay(card);
   const timerEl = card.querySelector('.ad-timer')!;
-  let left = 5;
+  let left = seconds;
   const tick = window.setInterval(() => {
     left -= 1;
     timerEl.textContent = String(Math.max(0, left));
@@ -161,7 +181,7 @@ function playFakeAd(onDone: () => void): void {
     }
     clearInterval(tick);
     close.disabled = false;
-    close.textContent = '关闭并领取 200 DNA';
+    close.textContent = `关闭并领取 ${reward} DNA`;
   }, 1000);
 
   close.addEventListener('click', () => {
