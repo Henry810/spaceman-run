@@ -76,42 +76,33 @@ function isGate(kind: ObstacleKind): boolean {
 }
 
 /**
- * Min clear space (px) between previous right edge and next left edge.
- * Early runs use a higher virtual speed (wider gaps); late runs ease toward
- * denser on-screen packing instead of stretching with world speed.
+ * Fixed on-screen clear space (px) between obstacles.
+ * Density stays constant for the whole run; higher world speed only shortens
+ * reaction time (world speed itself is capped in World.update).
  */
-const SPEED_LO = 280;
-const SPEED_HI = 500;
-
-function gapScaleSpeed(worldSpeed: number): number {
-  const t = Math.max(0, Math.min(1, (worldSpeed - SPEED_LO) / (SPEED_HI - SPEED_LO)));
-  // Early ~1.25× open; late ~0.78× open vs a 280 baseline.
-  return SPEED_LO * (1.25 * (1 - t) + 0.78 * t);
-}
+const GAP_BASE_PX = 320;
+const GAP_EMPTY_PX = 320;
 
 function minGapPx(
   prev: ObstacleKind | 'empty' | null,
   next: ObstacleKind | 'empty',
-  speed: number,
+  _speed: number,
 ): number {
-  const gs = gapScaleSpeed(speed);
-  if (next === 'empty') {
-    // Forced breathers stay a bit shorter than obstacle gaps so late-game
-    // wide clusters don't read as huge empty deserts.
-    return Math.max(170, gs * 0.58);
-  }
-  let gap = Math.max(240, gs * 0.82);
+  if (next === 'empty') return GAP_EMPTY_PX;
+
+  let gap = GAP_BASE_PX;
+  // Tiny kind tweaks only — avoid stacking into late-game deserts.
   if (prev === 'empty' || prev == null) {
-    gap *= 0.92;
+    gap *= 0.95;
   } else {
-    if (isJumpGround(prev)) gap *= 1.16;
-    if (isWideGround(prev)) gap *= 1.18;
-    if (isGate(prev)) gap *= 1.12;
+    if (isJumpGround(prev)) gap *= 1.06;
+    if (isWideGround(prev)) gap *= 1.08;
+    if (isGate(prev)) gap *= 1.05;
   }
-  if (isJumpGround(next)) gap *= 1.06;
-  if (isWideGround(next)) gap *= 1.1;
-  if (isGate(next)) gap *= 1.08;
-  if (next === 'ptero') gap *= 0.94;
+  if (isJumpGround(next)) gap *= 1.03;
+  if (isWideGround(next)) gap *= 1.05;
+  if (isGate(next)) gap *= 1.03;
+  if (next === 'ptero') gap *= 0.97;
   return gap;
 }
 
@@ -207,8 +198,6 @@ export class ObstacleManager {
   private introIndex = 0;
   private lastKind: ObstacleKind | 'empty' | null = null;
   private lastPteroBand: Obstacle['pteroBand'];
-  /** After wide clusters, force one empty beat */
-  private pendingEmpty = false;
 
   reset(): void {
     this.list = [];
@@ -217,7 +206,6 @@ export class ObstacleManager {
     this.introIndex = 0;
     this.lastKind = null;
     this.lastPteroBand = undefined;
-    this.pendingEmpty = false;
   }
 
   /** Drop pending preview spawn (used during warp dashes). */
@@ -231,7 +219,6 @@ export class ObstacleManager {
     this.introIndex = INTRO_BEATS.length;
     this.lastKind = 'empty';
     this.lastPteroBand = undefined;
-    this.pendingEmpty = false;
     this.spawnTimer = 0.6;
     this.previewQueue = null;
   }
@@ -259,20 +246,21 @@ export class ObstacleManager {
         if (this.introIndex < INTRO_BEATS.length) {
           const beat = INTRO_BEATS[this.introIndex++];
           if (beat === 'empty') {
-            this.spawnTimer = 1.45;
+            this.spawnTimer = GAP_EMPTY_PX / Math.max(1, speed);
             this.lastKind = 'empty';
             this.lastPteroBand = undefined;
           } else {
             const o = makeObstacle(beat, GAME_W + 10);
             this.list.push(o);
+            const gap = minGapPx(
+              this.introIndex === 1 ? null : INTRO_BEATS[this.introIndex - 2],
+              beat,
+              speed,
+            );
             this.lastKind = beat;
             this.lastPteroBand = o.pteroBand;
-            this.spawnTimer =
-              beat === 'caveArch' ? 1.35 : beat === 'cactusX2' ? 1.25 : 1.15;
+            this.spawnTimer = gap / Math.max(1, speed);
           }
-        } else if (this.pendingEmpty) {
-          this.pendingEmpty = false;
-          this.scheduleEmpty(speed);
         } else {
           const kind = this.pickKind(distance);
           if (showPreview) {
@@ -300,13 +288,6 @@ export class ObstacleManager {
     this.previewQueue = null;
   }
 
-  private scheduleEmpty(speed: number): void {
-    const gap = minGapPx(this.lastKind, 'empty', speed);
-    this.spawnTimer = gap / Math.max(1, speed);
-    this.lastKind = 'empty';
-    this.lastPteroBand = undefined;
-  }
-
   private pushSpawn(kind: ObstacleKind, speed: number): void {
     const o = makeObstacle(kind, GAME_W + 10);
     this.list.push(o);
@@ -314,7 +295,6 @@ export class ObstacleManager {
     this.spawnTimer = gap / Math.max(1, speed);
     this.lastKind = kind;
     this.lastPteroBand = o.pteroBand;
-    if (isWideGround(kind)) this.pendingEmpty = true;
   }
 
   private pickKind(distance: number): ObstacleKind {
@@ -322,12 +302,12 @@ export class ObstacleManager {
     const prevLowPtero = prev === 'ptero' && this.lastPteroBand === 'low';
     const prevJump = prev != null && prev !== 'empty' && isJumpGround(prev);
 
-    // After a jump-ground hazard, prefer breathers / high birds / short cactus.
+    // After a jump-ground hazard, prefer soft follow-ups (same gap size).
     if (prevJump || prevLowPtero) {
       const roll = Math.random();
-      if (roll < 0.42) return 'cactusS';
-      if (distance > 1400 && roll < 0.72) return 'ptero';
-      if (distance > 900 && roll < 0.88) {
+      if (roll < 0.45) return 'cactusS';
+      if (distance > 1400 && roll < 0.75) return 'ptero';
+      if (distance > 900 && roll < 0.9) {
         return Math.random() < 0.5 ? 'museumDoor' : 'caveArch';
       }
       return 'cactusS';
@@ -340,11 +320,10 @@ export class ObstacleManager {
     if (distance > 1400 && r < 0.28) return 'ptero';
 
     const g = Math.random();
-    // Late wide clusters: a bit rarer so forced empty beats don't dominate density.
-    if (distance > 5000 && g < 0.08 && prev !== 'cactusX4' && prev !== 'cactusX3') {
+    if (distance > 5000 && g < 0.1 && prev !== 'cactusX4' && prev !== 'cactusX3') {
       return 'cactusX4';
     }
-    if (distance > 2500 && g < 0.16 && prev !== 'cactusX3' && prev !== 'cactusX4') {
+    if (distance > 2500 && g < 0.18 && prev !== 'cactusX3' && prev !== 'cactusX4') {
       return 'cactusX3';
     }
     if (g < 0.28) return 'cactusX2';

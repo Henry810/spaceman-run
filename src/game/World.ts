@@ -58,6 +58,7 @@ export class World {
 
   update(dt: number, dashBoost = 0): void {
     this.elapsed += dt;
+    // Cap growth so late-game remains theoretically passable at fixed visual gaps.
     const base = 280 + Math.min(220, this.distance * 0.012);
     this.speed = base + dashBoost;
     this.distance += this.speed * dt;
