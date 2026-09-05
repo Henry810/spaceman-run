@@ -194,6 +194,8 @@ export class ObstacleManager {
   list: Obstacle[] = [];
   private spawnTimer = 0.9;
   private previewQueue: { kind: ObstacleKind; in: number } | null = null;
+  /** Next obstacle already chosen for the current gap countdown. */
+  private pendingKind: ObstacleKind | null = null;
   /** Fixed opening lesson: single short → arch → double short → empty */
   private introIndex = 0;
   private lastKind: ObstacleKind | 'empty' | null = null;
@@ -203,6 +205,7 @@ export class ObstacleManager {
     this.list = [];
     this.spawnTimer = 0.9;
     this.previewQueue = null;
+    this.pendingKind = null;
     this.introIndex = 0;
     this.lastKind = null;
     this.lastPteroBand = undefined;
@@ -211,6 +214,7 @@ export class ObstacleManager {
   /** Drop pending preview spawn (used during warp dashes). */
   clearPreview(): void {
     this.previewQueue = null;
+    this.pendingKind = null;
     this.spawnTimer = 0.85;
   }
 
@@ -221,6 +225,7 @@ export class ObstacleManager {
     this.lastPteroBand = undefined;
     this.spawnTimer = 0.6;
     this.previewQueue = null;
+    this.pendingKind = null;
   }
 
   update(
@@ -236,40 +241,32 @@ export class ObstacleManager {
 
       if (this.previewQueue) {
         this.previewQueue.in -= dt;
-        if (this.previewQueue.in <= 0) {
-          this.pushSpawn(this.previewQueue.kind, speed);
-          this.previewQueue = null;
-        }
+        if (this.previewQueue.in < 0) this.previewQueue.in = 0;
       }
 
-      if (this.spawnTimer <= 0 && !this.previewQueue) {
-        if (this.introIndex < INTRO_BEATS.length) {
+      if (this.spawnTimer <= 0) {
+        if (this.pendingKind) {
+          this.spawnNow(this.pendingKind, speed, distance, showPreview, previewLead);
+        } else if (this.introIndex < INTRO_BEATS.length) {
           const beat = INTRO_BEATS[this.introIndex++];
           if (beat === 'empty') {
-            this.spawnTimer = GAP_EMPTY_PX / Math.max(1, speed);
             this.lastKind = 'empty';
             this.lastPteroBand = undefined;
+            this.armNextGap(speed, distance, showPreview, previewLead, GAP_EMPTY_PX);
           } else {
-            const o = makeObstacle(beat, GAME_W + 10);
-            this.list.push(o);
+            this.list.push(makeObstacle(beat, GAME_W + 10));
+            this.lastKind = beat;
+            this.lastPteroBand = undefined;
             const gap = minGapPx(
               this.introIndex === 1 ? null : INTRO_BEATS[this.introIndex - 2],
               beat,
               speed,
             );
-            this.lastKind = beat;
-            this.lastPteroBand = o.pteroBand;
-            this.spawnTimer = gap / Math.max(1, speed);
+            this.armNextGap(speed, distance, showPreview, previewLead, gap);
           }
         } else {
-          const kind = this.pickKind(distance);
-          if (showPreview) {
-            // Hold spawn until preview resolves; gap starts after real spawn.
-            this.spawnTimer = 999;
-            this.previewQueue = { kind, in: previewLead };
-          } else {
-            this.pushSpawn(kind, speed);
-          }
+          // First post-intro pick (or after clear): choose and arm a gap.
+          this.armNextGap(speed, distance, showPreview, previewLead);
         }
       }
     }
@@ -286,15 +283,50 @@ export class ObstacleManager {
   clearAll(): void {
     this.list = [];
     this.previewQueue = null;
+    this.pendingKind = null;
   }
 
-  private pushSpawn(kind: ObstacleKind, speed: number): void {
+  /** Place obstacle, then start exactly one gap countdown to the following one. */
+  private spawnNow(
+    kind: ObstacleKind,
+    speed: number,
+    distance: number,
+    showPreview: boolean,
+    previewLead: number,
+  ): void {
     const o = makeObstacle(kind, GAME_W + 10);
     this.list.push(o);
-    const gap = minGapPx(this.lastKind, kind, speed);
-    this.spawnTimer = gap / Math.max(1, speed);
     this.lastKind = kind;
     this.lastPteroBand = o.pteroBand;
+    this.pendingKind = null;
+    this.previewQueue = null;
+    this.armNextGap(speed, distance, showPreview, previewLead);
+  }
+
+  /**
+   * Pick the upcoming obstacle and wait minGapPx/speed once.
+   * Preview runs inside that same window (does not stack extra delay).
+   */
+  private armNextGap(
+    speed: number,
+    distance: number,
+    showPreview: boolean,
+    previewLead: number,
+    fixedGapPx?: number,
+  ): void {
+    const kind = this.pickKind(distance);
+    const gap = fixedGapPx ?? minGapPx(this.lastKind, kind, speed);
+    const wait = gap / Math.max(1, speed);
+    this.pendingKind = kind;
+    if (showPreview) {
+      this.previewQueue = {
+        kind,
+        in: Math.min(previewLead, wait * 0.9),
+      };
+    } else {
+      this.previewQueue = null;
+    }
+    this.spawnTimer = wait;
   }
 
   private pickKind(distance: number): ObstacleKind {
