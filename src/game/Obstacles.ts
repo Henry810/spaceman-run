@@ -51,9 +51,54 @@ export interface Obstacle {
   grid: PixelGrid;
   w: number;
   h: number;
+  /** Only for pteros — used by spawn pairing */
+  pteroBand?: 'low' | 'mid' | 'high';
 }
 
 const PIXEL = SPRITE_SCALE;
+
+/** Ground obstacles that usually need a jump */
+function isJumpGround(kind: ObstacleKind): boolean {
+  return (
+    kind === 'cactusT' ||
+    kind === 'cactusX2' ||
+    kind === 'cactusX3' ||
+    kind === 'cactusX4'
+  );
+}
+
+function isWideGround(kind: ObstacleKind): boolean {
+  return kind === 'cactusX3' || kind === 'cactusX4';
+}
+
+function isGate(kind: ObstacleKind): boolean {
+  return kind === 'museumDoor' || kind === 'caveArch';
+}
+
+/** Min clear space (px) between previous right edge and next left edge. */
+function minGapPx(
+  prev: ObstacleKind | 'empty' | null,
+  next: ObstacleKind | 'empty',
+  speed: number,
+): number {
+  if (next === 'empty') {
+    return Math.max(200, speed * 0.7);
+  }
+  // ~one high jump of travel + land recovery
+  let gap = Math.max(220, speed * 0.82);
+  if (prev === 'empty' || prev == null) {
+    gap *= 0.9;
+  } else {
+    if (isJumpGround(prev)) gap *= 1.2;
+    if (isWideGround(prev)) gap *= 1.25;
+    if (isGate(prev)) gap *= 1.15;
+  }
+  if (isJumpGround(next)) gap *= 1.08;
+  if (isWideGround(next)) gap *= 1.12;
+  if (isGate(next)) gap *= 1.1;
+  if (next === 'ptero') gap *= 0.95;
+  return gap;
+}
 
 function gridFor(kind: ObstacleKind): PixelGrid {
   switch (kind) {
@@ -81,16 +126,24 @@ function makeObstacle(kind: ObstacleKind, x: number): Obstacle {
   const { w } = gridSize(grid);
   const solidH = lastSolidRow(grid) + 1;
   let y: number;
+  let pteroBand: Obstacle['pteroBand'];
   if (kind === 'ptero') {
     const band = Math.random();
     // Low: hits standing, clears duck. Mid/high: jump hazards.
-    if (band < 0.34) y = GROUND_Y - 67 * PIXEL;
-    else if (band < 0.67) y = GROUND_Y - 86 * PIXEL;
-    else y = GROUND_Y - 102 * PIXEL;
+    if (band < 0.34) {
+      y = GROUND_Y - 67 * PIXEL;
+      pteroBand = 'low';
+    } else if (band < 0.67) {
+      y = GROUND_Y - 86 * PIXEL;
+      pteroBand = 'mid';
+    } else {
+      y = GROUND_Y - 102 * PIXEL;
+      pteroBand = 'high';
+    }
   } else {
     y = plantY(GROUND_Y, grid, PIXEL);
   }
-  return { kind, x, y, grid, w: w * PIXEL, h: solidH * PIXEL };
+  return { kind, x, y, grid, w: w * PIXEL, h: solidH * PIXEL, pteroBand };
 }
 
 function solidHitbox(
@@ -137,12 +190,19 @@ export class ObstacleManager {
   private previewQueue: { kind: ObstacleKind; in: number } | null = null;
   /** Fixed opening lesson: single short → arch → double short → empty */
   private introIndex = 0;
+  private lastKind: ObstacleKind | 'empty' | null = null;
+  private lastPteroBand: Obstacle['pteroBand'];
+  /** After wide clusters, force one empty beat */
+  private pendingEmpty = false;
 
   reset(): void {
     this.list = [];
     this.spawnTimer = 0.9;
     this.previewQueue = null;
     this.introIndex = 0;
+    this.lastKind = null;
+    this.lastPteroBand = undefined;
+    this.pendingEmpty = false;
   }
 
   update(
@@ -157,7 +217,7 @@ export class ObstacleManager {
     if (this.previewQueue) {
       this.previewQueue.in -= dt;
       if (this.previewQueue.in <= 0) {
-        this.list.push(makeObstacle(this.previewQueue.kind, GAME_W + 10));
+        this.pushSpawn(this.previewQueue.kind, speed);
         this.previewQueue = null;
       }
     }
@@ -167,32 +227,27 @@ export class ObstacleManager {
         const beat = INTRO_BEATS[this.introIndex++];
         if (beat === 'empty') {
           this.spawnTimer = 1.45;
+          this.lastKind = 'empty';
+          this.lastPteroBand = undefined;
         } else {
-          this.list.push(makeObstacle(beat, GAME_W + 10));
+          const o = makeObstacle(beat, GAME_W + 10);
+          this.list.push(o);
+          this.lastKind = beat;
+          this.lastPteroBand = o.pteroBand;
           this.spawnTimer =
             beat === 'caveArch' ? 1.35 : beat === 'cactusX2' ? 1.25 : 1.15;
         }
+      } else if (this.pendingEmpty) {
+        this.pendingEmpty = false;
+        this.scheduleEmpty(speed);
       } else {
         const kind = this.pickKind(distance);
-        const widthFactor =
-          kind === 'cactusX4'
-            ? 1.35
-            : kind === 'cactusX3'
-              ? 1.2
-              : kind === 'cactusX2'
-                ? 1.1
-                : kind === 'museumDoor' || kind === 'caveArch'
-                  ? 1.15
-                  : 1;
-        const gap =
-          (0.88 + Math.random() * 0.72 - Math.min(0.4, distance / 20000)) *
-          widthFactor;
-        this.spawnTimer = Math.max(0.55, gap);
-
         if (showPreview) {
+          // Hold spawn until preview resolves; gap starts after real spawn.
+          this.spawnTimer = 999;
           this.previewQueue = { kind, in: previewLead };
         } else {
-          this.list.push(makeObstacle(kind, GAME_W + 10));
+          this.pushSpawn(kind, speed);
         }
       }
     }
@@ -206,7 +261,40 @@ export class ObstacleManager {
     this.list = this.list.filter((o) => o.x + o.w > -20);
   }
 
+  private scheduleEmpty(speed: number): void {
+    const gap = minGapPx(this.lastKind, 'empty', speed);
+    this.spawnTimer = gap / Math.max(1, speed);
+    this.lastKind = 'empty';
+    this.lastPteroBand = undefined;
+  }
+
+  private pushSpawn(kind: ObstacleKind, speed: number): void {
+    const o = makeObstacle(kind, GAME_W + 10);
+    this.list.push(o);
+    const gap = minGapPx(this.lastKind, kind, speed);
+    this.spawnTimer = gap / Math.max(1, speed);
+    this.lastKind = kind;
+    this.lastPteroBand = o.pteroBand;
+    if (isWideGround(kind)) this.pendingEmpty = true;
+  }
+
   private pickKind(distance: number): ObstacleKind {
+    const prev = this.lastKind;
+    const prevLowPtero = prev === 'ptero' && this.lastPteroBand === 'low';
+    const prevJump = prev != null && prev !== 'empty' && isJumpGround(prev);
+
+    // After a jump-ground hazard, prefer breathers / high birds / short cactus.
+    if (prevJump || prevLowPtero) {
+      const roll = Math.random();
+      if (roll < 0.35) return 'cactusS';
+      if (distance > 1400 && roll < 0.7) return 'ptero';
+      if (distance > 900 && roll < 0.85) {
+        return Math.random() < 0.5 ? 'museumDoor' : 'caveArch';
+      }
+      // Soft fallback: short cactus rather than another tall cluster
+      return 'cactusS';
+    }
+
     const r = Math.random();
     if (distance > 900 && r < 0.14) {
       return Math.random() < 0.5 ? 'museumDoor' : 'caveArch';
@@ -214,8 +302,13 @@ export class ObstacleManager {
     if (distance > 1400 && r < 0.28) return 'ptero';
 
     const g = Math.random();
-    if (distance > 5000 && g < 0.12) return 'cactusX4';
-    if (distance > 2500 && g < 0.22) return 'cactusX3';
+    // Don't stack wide clusters back-to-back (pendingEmpty also guards).
+    if (distance > 5000 && g < 0.12 && prev !== 'cactusX4' && prev !== 'cactusX3') {
+      return 'cactusX4';
+    }
+    if (distance > 2500 && g < 0.22 && prev !== 'cactusX3' && prev !== 'cactusX4') {
+      return 'cactusX3';
+    }
     if (g < 0.28) return 'cactusX2';
     if (g < 0.55) return 'cactusT';
     return 'cactusS';

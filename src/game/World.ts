@@ -12,11 +12,19 @@ const MIN_SKY = 40;
 const MAX_SKY = 120;
 const BG_CLOUD_SPEED = 0.2;
 
+/** Distance per day/night half-cycle */
+const NIGHT_SEGMENT = 3500;
+/** Seconds to blend day ↔ night */
+const TWILIGHT_SEC = 2.8;
+
 export class World {
   distance = 0;
   speed = 280;
   elapsed = 0;
+  /** True when past twilight midpoint — used for gameplay/achievements */
   night = false;
+  /** 0 = full day, 1 = full night (smooth for rendering) */
+  nightFactor = 0;
   clouds: { x: number; y: number; gap: number }[] = [];
   groundOffset = 0;
 
@@ -33,7 +41,8 @@ export class World {
         y: MIN_SKY + Math.random() * (MAX_SKY - MIN_SKY),
         gap: MIN_CLOUD_GAP + Math.random() * (MAX_CLOUD_GAP - MIN_CLOUD_GAP),
       });
-      x += CLOUD_W + MIN_CLOUD_GAP + Math.random() * (MAX_CLOUD_GAP - MIN_CLOUD_GAP);
+      x +=
+        CLOUD_W + MIN_CLOUD_GAP + Math.random() * (MAX_CLOUD_GAP - MIN_CLOUD_GAP);
     }
   }
 
@@ -42,6 +51,7 @@ export class World {
     this.speed = 280;
     this.elapsed = 0;
     this.night = false;
+    this.nightFactor = 0;
     this.groundOffset = 0;
     this.seedClouds();
   }
@@ -52,7 +62,16 @@ export class World {
     this.speed = base + dashBoost;
     this.distance += this.speed * dt;
     this.groundOffset = (this.groundOffset + this.speed * dt) % 24;
-    this.night = Math.floor(this.distance / 3500) % 2 === 1;
+
+    const wantNight = Math.floor(this.distance / NIGHT_SEGMENT) % 2 === 1;
+    const target = wantNight ? 1 : 0;
+    const step = dt / TWILIGHT_SEC;
+    if (this.nightFactor < target) {
+      this.nightFactor = Math.min(target, this.nightFactor + step);
+    } else if (this.nightFactor > target) {
+      this.nightFactor = Math.max(target, this.nightFactor - step);
+    }
+    this.night = this.nightFactor > 0.5;
 
     const drift = this.speed * BG_CLOUD_SPEED * dt;
     for (const c of this.clouds) {
@@ -62,8 +81,7 @@ export class World {
 
     const last = this.clouds[this.clouds.length - 1];
     const need =
-      this.clouds.length < MAX_CLOUDS &&
-      (!last || GAME_W - last.x > last.gap);
+      this.clouds.length < MAX_CLOUDS && (!last || GAME_W - last.x > last.gap);
     if (need) {
       this.clouds.push({
         x: GAME_W + Math.random() * 40,

@@ -31,26 +31,27 @@ export class Renderer {
 
   clear(world: World, nightVision: boolean): void {
     const ctx = this.ctx;
-    if (world.night) {
-      const dark = nightVision ? 0.35 : 0.55;
-      const g = ctx.createLinearGradient(0, 0, 0, GAME_H);
-      g.addColorStop(0, `rgba(12, 22, 40, ${0.95})`);
-      g.addColorStop(1, `rgba(28, 42, 38, ${0.98})`);
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, GAME_W, GAME_H);
-      ctx.fillStyle = `rgba(0,0,0,${dark})`;
-      ctx.fillRect(0, 0, GAME_W, GAME_H);
-    } else {
-      const g = ctx.createLinearGradient(0, 0, 0, GAME_H);
-      g.addColorStop(0, '#7ec8d4');
-      g.addColorStop(0.55, '#e8c99a');
-      g.addColorStop(1, '#c4a06a');
-      ctx.fillStyle = g;
+    const t = clamp01(world.nightFactor);
+    const daySky = ['#7ec8d4', '#e8c99a', '#c4a06a'] as const;
+    const nightSky = ['#0c1628', '#1c2a26', '#1a2420'] as const;
+    const g = ctx.createLinearGradient(0, 0, 0, GAME_H);
+    g.addColorStop(0, lerpHex(daySky[0], nightSky[0], t));
+    g.addColorStop(0.55, lerpHex(daySky[1], nightSky[1], t));
+    g.addColorStop(1, lerpHex(daySky[2], nightSky[2], t));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+    // Night veil ramps with twilight (night vision softens the peak)
+    if (t > 0.02) {
+      const peak = nightVision ? 0.35 : 0.55;
+      ctx.fillStyle = `rgba(0,0,0,${peak * t})`;
       ctx.fillRect(0, 0, GAME_W, GAME_H);
     }
 
     // Chrome-style outline clouds (46×14 @ SPRITE_SCALE)
-    const cloudRemap = world.night ? { u: '#6a7888' } : undefined;
+    const cloudDay = '#e8ecec';
+    const cloudNight = '#6a7888';
+    const cloudRemap = { u: lerpHex(cloudDay, cloudNight, t) };
     for (const c of world.clouds) {
       drawGrid(
         ctx,
@@ -64,10 +65,10 @@ export class Renderer {
     }
 
     // Ground: solid fill + world-stable speckles (no flicker while scrolling)
-    const line = world.night ? '#2a3a30' : '#2a2218';
-    const dirt = world.night ? '#1e2e28' : '#6b5230';
-    const dirtHi = world.night ? '#354840' : '#7a6238';
-    const dirtLo = world.night ? '#18241e' : '#5a4828';
+    const line = lerpHex('#2a2218', '#2a3a30', t);
+    const dirt = lerpHex('#6b5230', '#1e2e28', t);
+    const dirtHi = lerpHex('#7a6238', '#354840', t);
+    const dirtLo = lerpHex('#5a4828', '#18241e', t);
     ctx.fillStyle = line;
     ctx.fillRect(0, GROUND_Y, GAME_W, 3);
 
@@ -159,4 +160,26 @@ export function createGameCanvas(parent: HTMLElement): {
   const renderer = new Renderer(canvas, ctx);
   renderer.resize();
   return { canvas, renderer };
+}
+
+function clamp01(v: number): number {
+  return Math.max(0, Math.min(1, v));
+}
+
+function lerpHex(a: string, b: string, t: number): string {
+  const pa = parseHex(a);
+  const pb = parseHex(b);
+  const r = Math.round(pa[0] + (pb[0] - pa[0]) * t);
+  const g = Math.round(pa[1] + (pb[1] - pa[1]) * t);
+  const bl = Math.round(pa[2] + (pb[2] - pa[2]) * t);
+  return `rgb(${r},${g},${bl})`;
+}
+
+function parseHex(hex: string): [number, number, number] {
+  const h = hex.replace('#', '');
+  return [
+    parseInt(h.slice(0, 2), 16),
+    parseInt(h.slice(2, 4), 16),
+    parseInt(h.slice(4, 6), 16),
+  ];
 }
