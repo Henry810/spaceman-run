@@ -82,10 +82,10 @@ function minGapPx(
   speed: number,
 ): number {
   if (next === 'empty') {
-    return Math.max(180, speed * 0.62);
+    return Math.max(144, speed * 0.496);
   }
   // ~one high jump of travel + land recovery
-  let gap = Math.max(200, speed * 0.74);
+  let gap = Math.max(160, speed * 0.592);
   if (prev === 'empty' || prev == null) {
     gap *= 0.9;
   } else {
